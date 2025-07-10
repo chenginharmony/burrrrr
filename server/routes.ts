@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema } from "@shared/schema";
 import { z } from "zod";
+import passport from "passport";
 
 interface WebSocketClient extends WebSocket {
   userId?: string;
@@ -16,19 +17,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/login', (req, res, next) => {
-    passport.authenticate('oidc')(req, res, next);
-  });
-
-  // OAuth callback
-  app.get('/api/auth/callback', 
-    passport.authenticate('oidc', { failureRedirect: '/' }),
-    (req, res) => {
-      // Successful authentication, redirect to home
-      res.redirect('/');
-    }
-  );
+  // Auth routes are handled by setupAuth()
 
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -301,48 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Notifications routes
-  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      // Mock notifications data for now
-      const notifications = [
-        {
-          id: '1',
-          type: 'friend_request',
-          title: 'New Friend Request',
-          message: 'John Doe sent you a friend request',
-          timestamp: new Date().toISOString(),
-          read: false,
-          actionUrl: '/friends'
-        },
-        {
-          id: '2',
-          type: 'achievement',
-          title: 'Achievement Unlocked!',
-          message: 'You completed your first challenge',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          read: true,
-          actionUrl: '/challenges'
-        }
-      ];
-      res.json(notifications);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      res.status(500).json({ message: "Failed to fetch notifications" });
-    }
-  });
-
-  app.post('/api/notifications/:id/read', isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      // In a real app, this would update the notification status in the database
-      res.json({ message: "Notification marked as read" });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "Failed to mark notification as read" });
-    }
-  });
+  
 
   app.post('/api/friends/accept', isAuthenticated, async (req: any, res) => {
     try {
