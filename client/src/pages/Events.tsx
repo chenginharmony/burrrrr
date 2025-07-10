@@ -292,8 +292,13 @@ export default function Events() {
                     <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={isCreating}>
-                      {isCreating ? 'Creating...' : 'Create Event'}
+                    <Button type="submit" disabled={isCreating} className="min-w-24">
+                      {isCreating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Creating...
+                        </div>
+                      ) : 'Create Event'}
                     </Button>
                   </div>
                 </form>
@@ -376,7 +381,7 @@ export default function Events() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary">
@@ -541,8 +546,13 @@ export default function Events() {
                     <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={isCreating}>
-                      {isCreating ? 'Creating...' : 'Create Event'}
+                    <Button type="submit" disabled={isCreating} className="min-w-24">
+                      {isCreating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Creating...
+                        </div>
+                      ) : 'Create Event'}
                     </Button>
                   </div>
                 </form>
