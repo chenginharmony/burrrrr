@@ -24,6 +24,7 @@ import NotFound from "@/pages/not-found";
 import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import ReferralPage from "@/pages/ReferralPage";
+import EventChatPage from "@/pages/EventChatPage";
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -55,6 +56,7 @@ function AppContent() {
           <Switch>
             <Route path="/" component={() => <><Header title="Dashboard" showStreak /><Home /></>} />
             <Route path="/events" component={() => <><Header title="Events" /><Events /></>} />
+            <Route path="/events/:eventId/chat" component={EventChatPage} />
             <Route path="/challenges" component={() => <><Header title="Challenges" /><Challenges /></>} />
             <Route path="/friends" component={() => <><Header title="Friends" /><Friends /></>} />
             <Route path="/wallet" component={() => <><Header title="Wallet" /><Wallet /></>} />
@@ -72,6 +74,7 @@ function AppContent() {
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/events" component={Events} />
+          <Route path="/events/:eventId/chat" component={EventChatPage} />
           <Route path="/challenges" component={Challenges} />
           <Route path="/friends" component={Friends} />
           <Route path="/wallet" component={Wallet} />

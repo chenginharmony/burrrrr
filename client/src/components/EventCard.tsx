@@ -1,8 +1,9 @@
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Clock, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { Event } from '@/hooks/useEvent';
+
+const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&auto=format&fit=crop';
 
 interface EventCardProps {
   event: Event;
@@ -11,95 +12,178 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onJoin, isJoining }: EventCardProps) {
-  const isLive = event.status === 'active' && new Date(event.startTime) <= new Date();
-  const timeLeft = new Date(event.endTime).getTime() - new Date().getTime();
-  const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-  const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const [, setLocation] = useLocation();
+  const [currentParticipants, setCurrentParticipants] = useState(0);
+  const [poolAmount, setPoolAmount] = useState(0);
 
-  const getCategoryIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'crypto':
-        return 'fab fa-bitcoin text-orange-500';
-      case 'sports':
-        return 'fas fa-football-ball text-green-500';
-      case 'gaming':
-        return 'fas fa-gamepad text-blue-500';
-      case 'music':
-        return 'fas fa-music text-purple-500';
-      case 'politics':
-        return 'fas fa-landmark text-red-500';
-      default:
-        return 'fas fa-circle text-gray-500';
+  const formatCurrency = (amount: number, currency: string = '₦', shortenLargeNumbers: boolean = true) => {
+    if (shortenLargeNumbers) {
+      if (amount >= 1000000) {
+        return `${currency}${(amount / 1000000).toFixed(1)}M`;
+      } else if (amount >= 1000) {
+        return `${currency}${(amount / 1000).toFixed(1)}K`;
+      }
     }
+    return `${currency}${amount.toLocaleString()}`;
   };
 
+  const getEventStatus = () => {
+    const now = new Date();
+    const startTime = new Date(event.startTime);
+    const endTime = new Date(event.endTime);
+
+    if (event.status === 'cancelled') {
+      return {
+        label: 'CANCELLED',
+        bg: 'bg-red-500',
+        dot: 'bg-red-500',
+        text: 'text-white',
+        animate: false,
+      };
+    }
+
+    if (now < startTime) {
+      return {
+        label: 'UPCOMING',
+        bg: 'bg-[#CCFF00]',
+        dot: 'bg-[#CCFF00]',
+        text: 'text-black',
+        animate: true,
+      };
+    }
+
+    if (now >= startTime && now <= endTime) {
+      return {
+        label: 'LIVE',
+        bg: 'bg-[#CCFF00]',
+        dot: 'bg-red-500',
+        text: 'text-black',
+        animate: true,
+      };
+    }
+
+    return {
+      label: 'ENDED',
+      bg: 'bg-gray-500',
+      dot: 'bg-gray-500',
+      text: 'text-white',
+      animate: false,
+    };
+  };
+
+  const handleJoinClick = () => {
+    // Navigate to event chat page
+    setLocation(`/events/${event.id}/chat`);
+  };
+
+  const status = getEventStatus();
+  const isEventEnded = status.label === 'ENDED' || status.label === 'CANCELLED';
+
+  // Set initial values from event data
+  useEffect(() => {
+    setCurrentParticipants(event.participantCount || 0);
+    setPoolAmount(parseFloat(event.wagerAmount || '0'));
+  }, [event]);
+
   return (
-    <Card className="border border-gray-200 dark:border-gray-600 hover:border-purple-500/50 transition-colors cursor-pointer">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3 mb-2">
-          <i className={getCategoryIcon(event.category)} />
-          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 capitalize">
-            {event.category}
-          </span>
-          <Badge variant={isLive ? "default" : "secondary"} className={isLive ? "bg-green-500 text-white" : ""}>
-            {isLive ? 'LIVE' : 'UPCOMING'}
-          </Badge>
-        </div>
-        
-        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-          {event.title}
-        </h4>
-        
-        {event.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-            {event.description}
-          </p>
-        )}
-        
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-4">
-            <div className="text-sm">
-              <span className="text-green-600 dark:text-green-400 font-medium">YES: --</span>
+    <div className="bg-black rounded-3xl overflow-hidden relative">
+      <div className="relative w-full aspect-video">
+        <img
+          src={event.imageUrl || DEFAULT_BANNER}
+          alt={event.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = DEFAULT_BANNER;
+          }}
+        />
+
+        {/* Header with creator info, title, and status */}
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent pt-2 pb-1.5">
+          <div className="px-3 grid grid-cols-[auto_1fr_auto] items-center w-full gap-2">
+            {/* Creator info - Left side */}
+            <div className="flex items-center flex-shrink-0">
+              <div className="overflow-hidden rounded-full h-5 w-5 border border-white/50 flex-shrink-0">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${event.creatorId || 'creator'}`}
+                  alt="Creator"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="text-white/90 text-xs ml-1.5">
+                {event.creatorId?.slice(0, 8) || "creator"}
+              </span>
             </div>
-            <div className="text-sm">
-              <span className="text-red-600 dark:text-red-400 font-medium">NO: --</span>
+
+            {/* Centered title */}
+            <h2 className="text-white text-lg font-bold leading-tight text-center mx-auto truncate px-2">
+              {event.title}
+            </h2>
+
+            {/* Status icon - Right side */}
+            <div className="flex-shrink-0">
+              <div className={`${status.bg} w-2.5 h-2.5 rounded-full shadow-sm relative`}>
+                {status.animate && (
+                  <div className={`absolute inset-0 ${status.dot} rounded-full animate-ping opacity-75`} />
+                )}
+                <div className={`absolute inset-0 ${status.dot} rounded-full`} />
+              </div>
             </div>
           </div>
-          <div className="text-sm font-medium text-gray-900 dark:text-white">
-            ₦{parseFloat(event.wagerAmount || '0').toLocaleString()}
+        </div>
+      </div>
+
+      {/* Bottom section with event pool and join button */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+        {/* Event Pool section */}
+        <div className="flex flex-col justify-end">
+          <span className="text-white text-sm font-bold">Event Pool</span>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="bg-white rounded-lg px-2 py-1">
+              <span className="text-black font-bold text-sm">
+                {formatCurrency(poolAmount, '₦', true)}
+              </span>
+            </div>
+            {/* Participation Avatar + Count */}
+            <div className="flex items-center ml-[1rem]">
+              <div className="relative">
+                <div className="overflow-hidden rounded-full h-5 w-5 border-2 border-white-200 flex items-center justify-center">
+                  <img
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${event.id}`}
+                    alt="Participant"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+              <div className="bg-white rounded-full min-w-[1.5rem] h-5 flex items-center justify-center text-black font-bold text-xs ml-[-0.2rem] pl-1 pr-1">
+                {currentParticipants}
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-1">
-            <Clock size={12} />
-            {hoursLeft > 0 ? `${hoursLeft}h ${minutesLeft}m` : `${minutesLeft}m`} left
-          </div>
-          <div className="flex items-center gap-1">
-            <Users size={12} />
-            {event.maxParticipants} max
-          </div>
-        </div>
-        
-        {onJoin && (
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={() => onJoin(event.id, true)}
-              disabled={isJoining}
-              className="flex-1 bg-green-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-green-600 disabled:opacity-50"
-            >
-              Yes
-            </button>
-            <button
-              onClick={() => onJoin(event.id, false)}
-              disabled={isJoining}
-              className="flex-1 bg-red-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-red-600 disabled:opacity-50"
-            >
-              No
-            </button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+
+        {/* Join Button */}
+        <button
+          type="button"
+          onClick={handleJoinClick}
+          disabled={isEventEnded || isJoining}
+          className={`${
+            isEventEnded
+              ? 'bg-gray-500 cursor-not-allowed text-white'
+              : isJoining
+                ? 'bg-gray-400 text-white'
+                : 'bg-[#CCFF00] text-black hover:bg-[#b8e600]'
+          } h-10 flex items-center justify-center gap-1 px-4 rounded-3xl font-medium transition-colors`}
+        >
+          {event.isPrivate && <Lock className="h-4 w-4" />}
+          {isEventEnded
+            ? 'Closed'
+            : isJoining
+              ? 'Processing...'
+              : event.isPrivate
+                ? 'Request'
+                : 'Join'}
+        </button>
+      </div>
+    </div>
   );
 }
