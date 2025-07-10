@@ -138,7 +138,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(events.createdAt));
 
     if (searchQuery) {
-      query = query.where(sql`${events.title} ILIKE ${`%${searchQuery}%`}`);
+      return await query.where(sql`${events.title} ILIKE ${`%${searchQuery}%`}`);
     }
 
     return await query;
@@ -210,21 +210,23 @@ export class DatabaseStorage implements IStorage {
 
   // Challenge operations
   async getChallenges(userId?: string): Promise<Challenge[]> {
-    let query = db
-      .select()
-      .from(challenges)
-      .orderBy(desc(challenges.createdAt));
-
     if (userId) {
-      query = query.where(
-        or(
-          eq(challenges.challengerId, userId),
-          eq(challenges.challengedId, userId)
+      return await db
+        .select()
+        .from(challenges)
+        .where(
+          or(
+            eq(challenges.challengerId, userId),
+            eq(challenges.challengedId, userId)
+          )
         )
-      );
+        .orderBy(desc(challenges.createdAt));
+    } else {
+      return await db
+        .select()
+        .from(challenges)
+        .orderBy(desc(challenges.createdAt));
     }
-
-    return await query;
   }
 
   async getChallenge(id: string): Promise<Challenge | undefined> {
@@ -296,7 +298,7 @@ export class DatabaseStorage implements IStorage {
 
     // Check for level up
     const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (user) {
+    if (user && user.xp !== null && user.level !== null) {
       const newLevel = Math.floor(user.xp / 100) + 1;
       if (newLevel > user.level) {
         await db
@@ -395,7 +397,7 @@ export class DatabaseStorage implements IStorage {
     today.setHours(0, 0, 0, 0);
 
     if (lastLogin.getTime() >= yesterday.getTime()) {
-      return user.loginStreak;
+      return user.loginStreak || 0;
     } else {
       // Reset streak if more than 1 day gap
       await db

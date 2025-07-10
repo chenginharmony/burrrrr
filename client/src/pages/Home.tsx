@@ -6,7 +6,7 @@ import { useChallenge } from '@/hooks/useChallenge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Header } from '@/components/Header';
 import { MobileFooterNav } from '@/components/MobileFooterNav';
-import StatsCard from '@/components/StatsCard';
+import { StatsCard } from '@/components/StatsCard';
 import { DailyLoginBonus } from '@/components/DailyLoginBonus';
 import { EventCard } from '@/components/EventCard';
 import { ChallengeCard } from '@/components/ChallengeCard';
