@@ -22,6 +22,7 @@ import Wallet from "@/pages/Wallet";
 import Leaderboard from "@/pages/Leaderboard";
 import NotFound from "@/pages/not-found";
 import Notifications from "@/pages/Notifications";
+import Profile from "@/pages/Profile";
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -58,6 +59,7 @@ function AppContent() {
             <Route path="/wallet" component={() => <><Header title="Wallet" /><Wallet /></>} />
             <Route path="/leaderboard" component={() => <><Header title="Leaderboard" /><Leaderboard /></>} />
             <Route path="/notifications" component={() => <><Header title="Notifications" /><Notifications /></>} />
+            <Route path="/profile" component={() => <><Header title="Profile" /><Profile /></>} />
             <Route component={() => <><Header title="404" /><NotFound /></>} />
           </Switch>
         </div>
@@ -73,6 +75,7 @@ function AppContent() {
           <Route path="/wallet" component={Wallet} />
           <Route path="/leaderboard" component={Leaderboard} />
           <Route path="/notifications" component={Notifications} />
+          <Route path="/profile" component={Profile} />
           <Route component={NotFound} />
         </Switch>
         <MobileNav />

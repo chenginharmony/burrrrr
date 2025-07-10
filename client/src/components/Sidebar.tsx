@@ -98,9 +98,9 @@ export function Sidebar() {
                 ₦{parseFloat(user.availablePoints || '0').toLocaleString()} • {user.xp} XP
               </p>
             </div>
-            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <Link href="/profile" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               <i className="fas fa-cog" />
-            </button>
+            </Link>
           </div>
         </div>
       )}

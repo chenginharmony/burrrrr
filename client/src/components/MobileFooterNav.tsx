@@ -51,17 +51,17 @@ export function MobileFooterNav() {
     },
     {
       id: 'profile',
-      path: '/wallet',
+      path: '/profile',
       icon: user?.profileImageUrl ? (
         <img
           src={user.profileImageUrl}
           alt="Profile"
-          className={`w-8 h-8 rounded-full object-cover border-2 ${location === '/wallet' ? 'border-lime-400' : 'border-transparent'}`}
+          className={`w-8 h-8 rounded-full object-cover border-2 ${location === '/profile' ? 'border-lime-400' : 'border-transparent'}`}
         />
       ) : (
         <i className="fas fa-user text-xl" />
       ),
-      label: 'Wallet',
+      label: 'Profile',
     },
   ];
 
