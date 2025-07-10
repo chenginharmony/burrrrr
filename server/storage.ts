@@ -90,6 +90,13 @@ export interface IStorage {
   // Leaderboard
   getLeaderboard(limit?: number): Promise<User[]>;
 
+  // User profile operations
+  getUserProfile(userId: string): Promise<any>;
+  followUser(followerId: string, followingId: string): Promise<void>;
+  unfollowUser(followerId: string, followingId: string): Promise<void>;
+  isFollowing(followerId: string, followingId: string): Promise<boolean>;
+  getUserStats(userId: string): Promise<any>;
+
   // Referral operations
   generateReferralCode(userId: string): Promise<string>;
   getReferralStats(userId: string): Promise<{
@@ -516,6 +523,95 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .orderBy(desc(users.xp))
       .limit(limit);
+  }
+
+  // User profile operations
+  async getUserProfile(userId: string): Promise<any> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) return null;
+
+    const stats = await this.getUserStats(userId);
+    
+    return {
+      ...user,
+      stats,
+      isFollowing: false, // Will be set by API route based on current user
+    };
+  }
+
+  async followUser(followerId: string, followingId: string): Promise<void> {
+    await db.insert(friends).values({
+      userId: followerId,
+      friendId: followingId,
+      status: "accepted", // Using friends table for following functionality
+    });
+  }
+
+  async unfollowUser(followerId: string, followingId: string): Promise<void> {
+    await db
+      .delete(friends)
+      .where(
+        and(
+          eq(friends.userId, followerId),
+          eq(friends.friendId, followingId)
+        )
+      );
+  }
+
+  async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+    const [friendship] = await db
+      .select()
+      .from(friends)
+      .where(
+        and(
+          eq(friends.userId, followerId),
+          eq(friends.friendId, followingId)
+        )
+      );
+    return !!friendship;
+  }
+
+  async getUserStats(userId: string): Promise<any> {
+    // Get events won
+    const eventsWon = await db
+      .select({ count: count() })
+      .from(eventParticipants)
+      .where(eq(eventParticipants.userId, userId));
+    
+    // Get total events participated
+    const totalEvents = await db
+      .select({ count: count() })
+      .from(eventParticipants)
+      .where(eq(eventParticipants.userId, userId));
+    
+    // Get followers count
+    const followersCount = await db
+      .select({ count: count() })
+      .from(friends)
+      .where(eq(friends.friendId, userId));
+    
+    // Get following count
+    const followingCount = await db
+      .select({ count: count() })
+      .from(friends)
+      .where(eq(friends.userId, userId));
+    
+    // Get total earnings from transactions
+    const earnings = await db
+      .select({ 
+        total: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'earn' THEN ${transactions.amount} ELSE 0 END), 0)::int`
+      })
+      .from(transactions)
+      .where(eq(transactions.userId, userId));
+
+    return {
+      eventsWon: eventsWon[0]?.count || 0,
+      totalEvents: totalEvents[0]?.count || 0,
+      followersCount: followersCount[0]?.count || 0,
+      followingCount: followingCount[0]?.count || 0,
+      totalEarnings: earnings[0]?.total || 0,
+      winRate: totalEvents[0]?.count > 0 ? ((eventsWon[0]?.count || 0) / totalEvents[0]?.count) * 100 : 0,
+    };
   }
 
   // Referral operations

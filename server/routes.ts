@@ -3,9 +3,11 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema } from "@shared/schema";
+import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema, users } from "@shared/schema";
 import { z } from "zod";
 import passport from "passport";
+import { db } from "./db";
+import { eq, and, or, sql } from "drizzle-orm";
 
 interface WebSocketClient extends WebSocket {
   userId?: string;
@@ -27,6 +29,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // User profile routes
+  app.get('/api/users/:id', async (req, res) => {
+    try {
+      const profile = await storage.getUserProfile(req.params.id);
+      if (!profile) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Failed to fetch user profile" });
+    }
+  });
+
+  app.post('/api/users/:id/follow', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const targetUserId = req.params.id;
+      
+      if (userId === targetUserId) {
+        return res.status(400).json({ message: "Cannot follow yourself" });
+      }
+
+      await storage.followUser(userId, targetUserId);
+      res.json({ message: "Successfully followed user" });
+    } catch (error) {
+      console.error("Error following user:", error);
+      res.status(500).json({ message: "Failed to follow user" });
+    }
+  });
+
+  app.post('/api/users/:id/unfollow', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const targetUserId = req.params.id;
+      
+      await storage.unfollowUser(userId, targetUserId);
+      res.json({ message: "Successfully unfollowed user" });
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+      res.status(500).json({ message: "Failed to unfollow user" });
+    }
+  });
+
+  app.get('/api/users/search', async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.length < 2) {
+        return res.json([]);
+      }
+      
+      // Search users by username or firstName
+      const users = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+        })
+        .from(users)
+        .where(
+          or(
+            sql`${users.username} ILIKE ${`%${query}%`}`,
+            sql`${users.firstName} ILIKE ${`%${query}%`}`
+          )
+        )
+        .limit(10);
+      
+      res.json(users);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
+  app.post('/api/transactions/tip', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { recipientId, amount } = req.body;
+      
+      if (!recipientId || !amount || amount <= 0) {
+        return res.status(400).json({ message: "Invalid tip data" });
+      }
+      
+      if (userId === recipientId) {
+        return res.status(400).json({ message: "Cannot tip yourself" });
+      }
+
+      // Check if user has enough balance
+      const user = await storage.getUser(userId);
+      if (!user || Number(user.availablePoints) < amount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      // Create tip transaction
+      await storage.createTransaction({
+        userId,
+        type: "tip",
+        amount: amount.toString(),
+        description: `Tip sent to user`,
+        status: "completed",
+        referenceId: recipientId,
+        metadata: { recipientId }
+      });
+
+      // Update user points
+      await storage.updateUserPoints(userId, -amount, 0);
+      await storage.updateUserPoints(recipientId, amount, 0);
+
+      res.json({ message: "Tip sent successfully" });
+    } catch (error) {
+      console.error("Error sending tip:", error);
+      res.status(500).json({ message: "Failed to send tip" });
     }
   });
 

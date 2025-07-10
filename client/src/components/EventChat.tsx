@@ -3,6 +3,7 @@ import { ArrowLeft, Send, Smile, Loader, X, Users, Clock } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { ProfileCard } from './ProfileCard';
 
 interface Event {
   id: string;
@@ -62,6 +63,7 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(true);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch event data
@@ -360,9 +362,12 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-gray-900 text-sm">
+                  <button
+                    onClick={() => setSelectedProfileUserId(msg.senderId)}
+                    className="font-medium text-gray-900 text-sm hover:text-purple-600 cursor-pointer"
+                  >
                     {msg.sender?.firstName} {msg.sender?.lastName}
-                  </span>
+                  </button>
                   <span className="text-xs text-gray-500">
                     {new Date(msg.createdAt).toLocaleTimeString()}
                   </span>
@@ -458,6 +463,14 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
           </button>
         </form>
       </div>
+
+      {/* Profile Card Modal */}
+      {selectedProfileUserId && (
+        <ProfileCard
+          userId={selectedProfileUserId}
+          onClose={() => setSelectedProfileUserId(null)}
+        />
+      )}
     </div>
   );
 }

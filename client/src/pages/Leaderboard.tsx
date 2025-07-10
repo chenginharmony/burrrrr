@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Trophy, Crown, Medal, Award, TrendingUp, Users } from 'lucide-react';
+import { ProfileCard } from '@/components/ProfileCard';
 
 interface LeaderboardUser {
   id: string;
@@ -27,6 +28,7 @@ export default function Leaderboard() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [timeframe, setTimeframe] = useState<'all' | 'weekly' | 'monthly'>('all');
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
 
   const { data: leaderboard = [], isLoading } = useQuery<LeaderboardUser[]>({
     queryKey: ['/api/leaderboard', { limit: 50 }],
@@ -108,7 +110,11 @@ export default function Leaderboard() {
           {/* Top 3 */}
           <div className="grid grid-cols-3 gap-2">
             {leaderboard.slice(0, 3).map((user, index) => (
-              <Card key={user.id} className={`${getRankColor(index + 1)} border-2`}>
+              <Card 
+                key={user.id} 
+                className={`${getRankColor(index + 1)} border-2 cursor-pointer hover:shadow-lg transition-shadow`}
+                onClick={() => setSelectedProfileUserId(user.id)}
+              >
                 <CardContent className="p-3 text-center">
                   <div className="flex justify-center mb-2">
                     {getRankIcon(index + 1)}
@@ -146,7 +152,8 @@ export default function Leaderboard() {
                 {leaderboard.map((user, index) => (
                   <div
                     key={user.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${getRankColor(index + 1)}`}
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${getRankColor(index + 1)} cursor-pointer hover:shadow-md transition-shadow`}
+                    onClick={() => setSelectedProfileUserId(user.id)}
                   >
                     <div className="flex-shrink-0">
                       {getRankIcon(index + 1)}
@@ -181,6 +188,14 @@ export default function Leaderboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Profile Card Modal */}
+        {selectedProfileUserId && (
+          <ProfileCard
+            userId={selectedProfileUserId}
+            onClose={() => setSelectedProfileUserId(null)}
+          />
+        )}
 
         <MobileFooterNav />
       </div>
@@ -246,7 +261,11 @@ export default function Leaderboard() {
       {/* Top 3 Podium */}
       <div className="grid grid-cols-3 gap-6">
         {leaderboard.slice(0, 3).map((user, index) => (
-          <Card key={user.id} className={`${getRankColor(index + 1)} border-2`}>
+          <Card 
+            key={user.id} 
+            className={`${getRankColor(index + 1)} border-2 cursor-pointer hover:shadow-lg transition-shadow`}
+            onClick={() => setSelectedProfileUserId(user.id)}
+          >
             <CardContent className="p-6 text-center">
               <div className="flex justify-center mb-4">
                 {getRankIcon(index + 1)}
@@ -287,7 +306,8 @@ export default function Leaderboard() {
             {leaderboard.map((user, index) => (
               <div
                 key={user.id}
-                className={`flex items-center gap-6 p-4 rounded-lg border ${getRankColor(index + 1)}`}
+                className={`flex items-center gap-6 p-4 rounded-lg border ${getRankColor(index + 1)} cursor-pointer hover:shadow-md transition-shadow`}
+                onClick={() => setSelectedProfileUserId(user.id)}
               >
                 <div className="flex-shrink-0">
                   {getRankIcon(index + 1)}
@@ -330,6 +350,14 @@ export default function Leaderboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Profile Card Modal */}
+      {selectedProfileUserId && (
+        <ProfileCard
+          userId={selectedProfileUserId}
+          onClose={() => setSelectedProfileUserId(null)}
+        />
+      )}
     </div>
   );
 }
