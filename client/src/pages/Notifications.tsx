@@ -1,7 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { MobileFooterNav } from '@/components/MobileFooterNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +35,9 @@ interface Notification {
 
 export default function NotificationsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
@@ -117,13 +120,13 @@ export default function NotificationsPage() {
 
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h ago`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays}d ago`;
-    
+
     return notificationTime.toLocaleDateString();
   };
 
@@ -170,7 +173,7 @@ export default function NotificationsPage() {
         showBackButton={isMobile}
         showStreak={!isMobile}
       />
-      
+
       <div className={`${isMobile ? 'pb-20 pt-16' : 'pt-16'} px-4 max-w-4xl mx-auto`}>
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-6">
@@ -185,7 +188,7 @@ export default function NotificationsPage() {
               </Badge>
             )}
           </div>
-          
+
           {unreadCount > 0 && (
             <Button 
               variant="outline" 
@@ -265,7 +268,7 @@ export default function NotificationsPage() {
                                 {notification.actionText}
                               </Button>
                             )}
-                            
+
                             {!notification.read && (
                               <Button 
                                 variant="ghost" 
@@ -276,7 +279,7 @@ export default function NotificationsPage() {
                                 <CheckCheck className="h-4 w-4" />
                               </Button>
                             )}
-                            
+
                             <Button 
                               variant="ghost" 
                               size="sm"
