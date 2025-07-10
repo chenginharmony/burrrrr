@@ -4,8 +4,8 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: 'fas fa-home' },
-  { name: 'Events', href: '/events', icon: 'fas fa-calendar-alt' },
+  { name: 'Events', href: '/', icon: 'fas fa-calendar-alt' },
+  { name: 'Dashboard', href: '/home', icon: 'fas fa-home' },
   { name: 'Challenges', href: '/challenges', icon: 'fas fa-gamepad' },
   { name: 'Friends', href: '/friends', icon: 'fas fa-users' },
   { name: 'Wallet', href: '/wallet', icon: 'fas fa-wallet' },

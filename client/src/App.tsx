@@ -13,7 +13,6 @@ import { AchievementNotification } from "@/components/ui/achievement-notificatio
 import { useState } from "react";
 
 // Pages
-import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import Events from "@/pages/Events";
 import Challenges from "@/pages/Challenges";
@@ -44,7 +43,24 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <Landing />;
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center p-8">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-lime-500 bg-clip-text text-transparent">
+            Welcome to BetChat
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            Please sign in to continue
+          </p>
+          <button
+            onClick={() => window.location.href = '/api/login'}
+            className="bg-gradient-to-r from-purple-600 to-lime-500 text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -54,8 +70,8 @@ function AppContent() {
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Switch>
-            <Route path="/" component={() => <><Header title="Dashboard" showStreak /><Home /></>} />
-            <Route path="/events" component={() => <><Header title="Events" /><Events /></>} />
+            <Route path="/" component={() => <><Header title="Events" /><Events /></>} />
+            <Route path="/home" component={() => <><Header title="Dashboard" showStreak /><Home /></>} />
             <Route path="/events/:eventId/chat" component={EventChatPage} />
             <Route path="/challenges" component={() => <><Header title="Challenges" /><Challenges /></>} />
             <Route path="/friends" component={() => <><Header title="Friends" /><Friends /></>} />
@@ -72,8 +88,8 @@ function AppContent() {
       {/* Mobile Layout */}
       <div className="lg:hidden flex flex-col h-full w-full">
         <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/events" component={Events} />
+          <Route path="/" component={Events} />
+          <Route path="/home" component={Home} />
           <Route path="/events/:eventId/chat" component={EventChatPage} />
           <Route path="/challenges" component={Challenges} />
           <Route path="/friends" component={Friends} />
