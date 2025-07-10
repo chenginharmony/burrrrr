@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Header } from '@/components/Header';
+import { MobileFooterNav } from '@/components/MobileFooterNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -180,6 +181,8 @@ export default function Leaderboard() {
             </CardContent>
           </Card>
         </div>
+
+        <MobileFooterNav />
       </div>
     );
   }

@@ -1,53 +1,164 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { useTheme } from '@/contexts/ThemeContext';
+
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import {
+  Bell,
+  MessageSquare,
+  Wallet,
+  LogIn,
+  Search,
+  ArrowLeft
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface HeaderProps {
-  title: string;
+  title?: string;
+  showMenu?: boolean;
+  onMenuClick?: () => void;
+  showSearch?: boolean;
+  showBackButton?: boolean;
   showStreak?: boolean;
 }
 
-export function Header({ title, showStreak = false }: HeaderProps) {
-  const { theme, toggleTheme } = useTheme();
+export function Header({
+  title,
+  showMenu = true,
+  onMenuClick,
+  showSearch = false,
+  showBackButton = false,
+  showStreak = false
+}: HeaderProps) {
+  const [location, navigate] = useLocation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+  };
+
+  const handleBack = () => {
+    window.history.back();
+  };
+
+  const balance = parseFloat(user?.availablePoints || '0');
+  const usdEquivalent = (balance * 0.0006).toFixed(2); // Mock conversion rate
+
+  // Format the notification count for display
+  const formatNotificationCount = (count: number) => {
+    if (count > 99) return '99+';
+    return count.toString();
+  };
+
+  const formatNumber = (num: number, currency: string) => {
+    if (num >= 1_000_000) return currency + (num / 1_000_000).toFixed(2).replace(/\.00$/, '') + 'M';
+    if (num >= 1_000) return currency + (num / 1_000).toFixed(2).replace(/\.00$/, '') + 'K';
+    return currency + num.toFixed(2).replace(/\.00$/, '');
+  };
 
   return (
-    <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
-        {showStreak && user?.loginStreak && (
-          <div className="flex items-center gap-2 bg-gradient-to-r from-orange-400 to-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-            <i className="fas fa-fire" />
-            <span>{user.loginStreak} Day Streak</span>
+    <header className="sticky top-0 z-50 bg-white bg-opacity-95 border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Left Section */}
+          <div className="flex items-center gap-4">
+            {/* Back button if requested */}
+            {showBackButton && (
+              <button onClick={handleBack} className="text-gray-700 mr-2">
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+            )}
+            {/* Show logo only if no back button and no title and on mobile */}
+            {(!showBackButton && (!title || location === '/events') && isMobile) && (
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-lime-500 rounded-lg flex items-center justify-center">
+                <i className="fas fa-dice text-white text-sm" />
+              </div>
+            )}
+            {/* Title always visible if provided */}
+            {title && (
+              <span className="font-bold text-xl text-gray-900 ml-2">{title}</span>
+            )}
           </div>
-        )}
-      </div>
-      <div className="flex items-center gap-4">
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg"
-        >
-          {theme === 'dark' ? (
-            <i className="fas fa-sun" />
-          ) : (
-            <i className="fas fa-moon" />
+
+          {/* Center Section - Search Bar (Desktop Only) */}
+          {showSearch && !isMobile && (
+            <div className="flex-1 max-w-2xl mx-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search events..."
+                  className="w-full pl-10 pr-4 py-2 bg-gray-100 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
           )}
-        </Button>
-        
-        {/* Notifications */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg"
-        >
-          <i className="fas fa-bell" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-        </Button>
+
+          {/* Right Section */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                {/* Leaderboard */}
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/leaderboard')}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+                  aria-label="Leaderboard"
+                >
+                  <i className="fas fa-trophy h-5 w-5 opacity-80 hover:opacity-100 transition-opacity" />
+                </button>
+
+                {/* Messages */}
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/friends')}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+                  aria-label="Messages"
+                >
+                  <MessageSquare className="h-6 w-6 opacity-100 hover:opacity-100 transition-opacity" />
+                </button>
+
+                {/* Notifications */}
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/notifications')}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-6 w-6" />
+                </button>
+
+                {/* Wallet */}
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/wallet')}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-lime-400 text-black font-semibold rounded-full hover:bg-lime-300 transition-colors"
+                  aria-label="Wallet"
+                >
+                  <span className="text-sm font-bold">
+                    {formatNumber(balance, '₦')}
+                    <span className="text-[10px] opacity-60 ml-0.5">
+                      (${usdEquivalent})
+                    </span>
+                  </span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleNavigate('/login')}
+                className="flex items-center gap-2 px-4 py-2 bg-lime-400 text-black rounded-md hover:bg-lime-300 transition-colors"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Sign in</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

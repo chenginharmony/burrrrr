@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { usePoints } from '@/hooks/usePoints';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Header } from '@/components/Header';
-import { StatsCard } from '@/components/StatsCard';
+import { MobileFooterNav } from '@/components/MobileFooterNav';
+import { usePoints } from '@/hooks/usePoints';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -181,6 +181,8 @@ export default function WalletPage() {
             </CardContent>
           </Card>
         </div>
+
+        <MobileFooterNav />
       </div>
     );
   }

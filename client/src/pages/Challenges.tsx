@@ -3,6 +3,7 @@ import { useChallenge } from '@/hooks/useChallenge';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Header } from '@/components/Header';
+import { MobileFooterNav } from '@/components/MobileFooterNav';
 import { ChallengeCard } from '@/components/ChallengeCard';
 import { ChatRoom } from '@/components/ChatRoom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -258,6 +259,8 @@ export default function Challenges() {
             )}
           </div>
         </div>
+
+        <MobileFooterNav />
       </div>
     );
   }

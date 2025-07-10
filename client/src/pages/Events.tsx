@@ -3,6 +3,7 @@ import { useEvent } from '@/hooks/useEvent';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Header } from '@/components/Header';
+import { MobileFooterNav } from '@/components/MobileFooterNav';
 import { EventCard } from '@/components/EventCard';
 import { ChatRoom } from '@/components/ChatRoom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -262,6 +263,8 @@ export default function Events() {
             </div>
           )}
         </div>
+
+        <MobileFooterNav />
       </div>
     );
   }

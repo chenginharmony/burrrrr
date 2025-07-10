@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
 import { Header } from '@/components/Header';
+import { MobileFooterNav } from '@/components/MobileFooterNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -213,6 +212,7 @@ export default function Friends() {
             )}
           </div>
         </div>
+        <MobileFooterNav />
       </div>
     );
   }
@@ -235,7 +235,7 @@ export default function Friends() {
             <div className="text-sm text-gray-600 dark:text-gray-400">Requests</div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -246,7 +246,7 @@ export default function Friends() {
               className="pl-10 w-64"
             />
           </div>
-          
+
           <Dialog open={isAddFriendDialogOpen} onOpenChange={setIsAddFriendDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary">
@@ -306,7 +306,7 @@ export default function Friends() {
                   </Badge>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Balance</span>
@@ -314,7 +314,7 @@ export default function Friends() {
                     ₦{parseFloat(friend.availablePoints || '0').toLocaleString()}
                   </span>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1">
                     <MessageSquare className="h-4 w-4 mr-2" />
