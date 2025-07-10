@@ -30,8 +30,8 @@ export default function Landing() {
                 <i className="fas fa-moon" />
               )}
             </Button>
-            <Button asChild>
-              <a href="/api/login">Sign In</a>
+            <Button onClick={() => window.location.href = '/api/login'}>
+              Sign In
             </Button>
           </div>
         </div>
@@ -94,8 +94,8 @@ export default function Landing() {
           </div>
 
           <div className="space-y-4">
-            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-lime-500 hover:from-purple-700 hover:to-lime-600 text-white px-8 py-3 text-lg" asChild>
-              <a href="/api/login">Get Started</a>
+            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-lime-500 hover:from-purple-700 hover:to-lime-600 text-white px-8 py-3 text-lg" onClick={() => window.location.href = '/api/login'}>
+              Get Started
             </Button>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Join thousands of users already enjoying BetChat

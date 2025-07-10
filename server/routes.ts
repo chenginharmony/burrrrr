@@ -17,6 +17,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
+  app.get('/api/login', (req, res, next) => {
+    passport.authenticate('oidc')(req, res, next);
+  });
+
+  // OAuth callback
+  app.get('/api/auth/callback', 
+    passport.authenticate('oidc', { failureRedirect: '/' }),
+    (req, res) => {
+      // Successful authentication, redirect to home
+      res.redirect('/');
+    }
+  );
+
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -60,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         creatorId: userId,
       });
-      
+
       const event = await storage.createEvent(validatedData);
       res.status(201).json(event);
     } catch (error) {
@@ -73,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { prediction, wagerAmount } = req.body;
-      
+
       await storage.joinEvent(req.params.id, userId, prediction, wagerAmount || 0);
       res.json({ message: "Successfully joined event" });
     } catch (error) {
@@ -111,12 +124,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventId: req.params.id,
         userId,
       });
-      
+
       const message = await storage.createEventMessage(validatedData);
-      
+
       // Broadcast to WebSocket clients
       broadcastToEventRoom(req.params.id, 'new_message', message);
-      
+
       res.status(201).json(message);
     } catch (error) {
       console.error("Error creating event message:", error);
@@ -156,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         challengerId: userId,
       });
-      
+
       const challenge = await storage.createChallenge(validatedData);
       res.status(201).json(challenge);
     } catch (error) {
@@ -205,12 +218,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         challengeId: req.params.id,
         userId,
       });
-      
+
       const message = await storage.createChallengeMessage(validatedData);
-      
+
       // Broadcast to WebSocket clients
       broadcastToChallengeRoom(req.params.id, 'new_message', message);
-      
+
       res.status(201).json(message);
     } catch (error) {
       console.error("Error creating challenge message:", error);
@@ -380,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (message: Buffer) => {
       try {
         const data = JSON.parse(message.toString());
-        
+
         switch (data.type) {
           case 'join_event':
             ws.eventId = data.eventId;
