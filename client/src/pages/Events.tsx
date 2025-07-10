@@ -138,6 +138,9 @@ export default function Events() {
             <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Event</DialogTitle>
+                <DialogDescription>
+                  Create a new event for others to join and participate in predictions.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleCreateEvent)} className="space-y-4">
@@ -384,6 +387,9 @@ export default function Events() {
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Event</DialogTitle>
+                <DialogDescription>
+                  Create a new event for others to join and participate in predictions.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleCreateEvent)} className="space-y-4">

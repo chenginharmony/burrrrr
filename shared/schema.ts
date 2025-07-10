@@ -249,6 +249,9 @@ export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  startTime: z.coerce.date(),
+  endTime: z.coerce.date(),
 });
 
 export const insertChallengeSchema = createInsertSchema(challenges).omit({

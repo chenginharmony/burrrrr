@@ -1,0 +1,29 @@
+ncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=vnJIq9OnVh0O' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)Understand this error
+chunk-WERSD76P.js?v=18c0fc7f:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+chunk-WERSD76P.js?v=18c0fc7f:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+    at a
+    at a
+    at https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=18c0fc7f:337:18
+    at nav
+    at div
+    at div
+    at Sidebar (https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/src/components/Sidebar.tsx:38:22)
+    at div
+    at div
+    at AppContent (https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/src/App.tsx?v=f3VXE_FAOvfEfM15d1jgR:42:42)
+    at Provider (https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PLT6GTVM.js?v=18c0fc7f:38:15)
+    at TooltipProvider (https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=18c0fc7f:62:5)
+    at WebSocketProvider (https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/src/contexts/WebSocketContext.tsx:21:37)
+    at ThemeProvider (https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/src/contexts/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://beb0961e-95f6-45cc-b27a-f2cfe6844022-00-149adkdusr6o0.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=18c0fc7f:2805:3)
+    at App
+printWarning @ chunk-WERSD76P.js?v=18c0fc7f:521Understand this error
+40:1  Failed to load resource: net::ERR_NAME_NOT_RESOLVEDUnderstand this error
+WebSocketContext.tsx:30 WebSocket connected
+4@radix-ui_react-dialog.js?v=18c0fc7f:340 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anonymous) @ @radix-ui_react-dialog.js?v=18c0fc7f:340Understand this warning
+api/events:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this error
+The deferred DOM Node could not be resolved to a valid node.
