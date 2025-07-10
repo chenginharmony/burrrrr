@@ -34,3 +34,6 @@ export function StatsCard({ title, value, subtitle, icon, gradient, progress }: 
     </Card>
   );
 }
+
+export { StatsCard };
+export default StatsCard;

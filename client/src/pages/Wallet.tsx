@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Wallet, ArrowUpRight, ArrowDownLeft, History, CreditCard, TrendingUp } from 'lucide-react';
-import StatsCard from '@/components/StatsCard';
+import { StatsCard } from '@/components/StatsCard';
 
 export default function WalletPage() {
   const { user } = useAuth();
