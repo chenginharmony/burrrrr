@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { LoginModal } from './LoginModal';
 
 interface HeaderProps {
   title?: string;
@@ -33,6 +34,7 @@ export function Header({
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -149,7 +151,7 @@ export function Header({
             ) : (
               <button
                 type="button"
-                onClick={() => handleNavigate('/login')}
+                onClick={() => setIsLoginModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-lime-400 text-black rounded-md hover:bg-lime-300 transition-colors"
               >
                 <LogIn className="h-4 w-4" />
@@ -159,6 +161,12 @@ export function Header({
           </div>
         </div>
       </div>
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
     </header>
   );
 }
