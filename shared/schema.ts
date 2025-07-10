@@ -278,6 +278,7 @@ export const insertEventSchema = createInsertSchema(events).omit({
 }).extend({
   startTime: z.coerce.date(),
   endTime: z.coerce.date(),
+  wagerAmount: z.coerce.string().optional(),
 });
 
 export const insertChallengeSchema = createInsertSchema(challenges).omit({

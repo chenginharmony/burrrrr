@@ -111,12 +111,12 @@ export default function Profile() {
                   <div className="flex justify-center">
                     <div className="relative">
                       <img
-                        src={user?.profileImageUrl || '/placeholder-avatar.png'}
+                        src={user?.profileImageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`}
                         alt={user?.firstName || 'User'}
                         className="w-24 h-24 rounded-full object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=7440ff&color=fff&size=96`;
+                          target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
                         }}
                       />
 
@@ -224,12 +224,12 @@ export default function Profile() {
           <div className="flex items-center gap-6">
             <div className="relative">
               <img
-                src={user?.profileImageUrl || '/placeholder-avatar.png'}
+                src={user?.profileImageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`}
                 alt={user?.firstName || 'User'}
                 className="w-24 h-24 rounded-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=7440ff&color=fff&size=96`;
+                  target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
                 }}
               />
               <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white text-purple-600 rounded-full flex items-center justify-center text-lg font-bold shadow-lg">

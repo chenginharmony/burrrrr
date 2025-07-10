@@ -18,14 +18,12 @@ export function MobileNav() {
         {navigation.map((item) => {
           const isActive = location === item.href;
           return (
-            <Link key={item.name} href={item.href}>
-              <a className={cn(
-                "flex flex-col items-center gap-1 p-2 text-gray-500 dark:text-gray-400",
-                isActive && "text-purple-600 dark:text-purple-400"
-              )}>
-                <i className={cn(item.icon, "text-lg")} />
-                <span className="text-xs font-medium">{item.name}</span>
-              </a>
+            <Link key={item.name} href={item.href} className={cn(
+              "flex flex-col items-center gap-1 p-2 text-gray-500 dark:text-gray-400",
+              isActive && "text-purple-600 dark:text-purple-400"
+            )}>
+              <i className={cn(item.icon, "text-lg")} />
+              <span className="text-xs font-medium">{item.name}</span>
             </Link>
           );
         })}
