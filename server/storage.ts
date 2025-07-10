@@ -89,6 +89,18 @@ export interface IStorage {
   
   // Leaderboard
   getLeaderboard(limit?: number): Promise<User[]>;
+
+  // Referral operations
+  generateReferralCode(userId: string): Promise<string>;
+  getReferralStats(userId: string): Promise<{
+    totalReferrals: number;
+    pendingReferrals: number;
+    completedReferrals: number;
+    totalRewards: number;
+    referralUsers: User[];
+  }>;
+  applyReferralCode(referralCode: string, userId: string): Promise<boolean>;
+  createReferralReward(referrerId: string, referredId: string, amount: number, type: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -504,6 +516,77 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .orderBy(desc(users.xp))
       .limit(limit);
+  }
+
+  // Referral operations
+  async generateReferralCode(userId: string): Promise<string> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    let referralCode = user.referralCode;
+    
+    if (!referralCode) {
+      // Generate a unique referral code
+      referralCode = `${user.username || user.id}${Date.now().toString().slice(-4)}`;
+      
+      // Update user with referral code
+      await db
+        .update(users)
+        .set({ referralCode, updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    }
+
+    return referralCode;
+  }
+
+  async getReferralStats(userId: string): Promise<{
+    totalReferrals: number;
+    pendingReferrals: number;
+    completedReferrals: number;
+    totalRewards: number;
+    referralUsers: User[];
+  }> {
+    // For now, return mock data until we have the referral tables
+    return {
+      totalReferrals: 0,
+      pendingReferrals: 0,
+      completedReferrals: 0,
+      totalRewards: 0,
+      referralUsers: []
+    };
+  }
+
+  async applyReferralCode(referralCode: string, userId: string): Promise<boolean> {
+    // Find the referrer by referral code
+    const [referrer] = await db
+      .select()
+      .from(users)
+      .where(eq(users.referralCode, referralCode));
+
+    if (!referrer || referrer.id === userId) {
+      return false;
+    }
+
+    // For now, just return true - we'll implement the full logic when tables are ready
+    return true;
+  }
+
+  async createReferralReward(referrerId: string, referredId: string, amount: number, type: string): Promise<void> {
+    // Create a transaction record for the reward
+    await this.createTransaction({
+      userId: referrerId,
+      type: 'referral_reward',
+      amount: amount.toString(),
+      description: `Referral reward for inviting user`,
+      status: 'completed',
+      referenceId: referredId,
+      metadata: { type }
+    });
+
+    // Update referrer's points
+    await this.updateUserPoints(referrerId, amount, amount * 2);
   }
 }
 

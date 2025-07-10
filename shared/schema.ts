@@ -41,6 +41,7 @@ export const users = pgTable("users", {
   availablePoints: decimal("available_points", { precision: 10, scale: 2 }).default("0"),
   loginStreak: integer("login_streak").default(0),
   lastLoginDate: timestamp("last_login_date"),
+  referralCode: varchar("referral_code", { length: 50 }).unique(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -206,6 +207,31 @@ export const dailyLogins = pgTable("daily_logins", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Referrals table
+export const referrals = pgTable("referrals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  referrerId: varchar("referrer_id").references(() => users.id),
+  referredId: varchar("referred_id").references(() => users.id),
+  referralCode: varchar("referral_code", { length: 50 }).unique(),
+  status: varchar("status", { length: 20 }).default("pending"),
+  rewardAmount: decimal("reward_amount", { precision: 10, scale: 2 }).default("0"),
+  rewardPaid: boolean("reward_paid").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Referral rewards table
+export const referralRewards = pgTable("referral_rewards", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  referralId: uuid("referral_id").references(() => referrals.id),
+  referrerId: varchar("referrer_id").references(() => users.id),
+  referredId: varchar("referred_id").references(() => users.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'referral_bonus', 'signup_bonus'
+  paid: boolean("paid").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdEvents: many(events),
@@ -290,6 +316,17 @@ export const insertDailyLoginSchema = createInsertSchema(dailyLogins).omit({
   createdAt: true,
 });
 
+export const insertReferralSchema = createInsertSchema(referrals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertReferralRewardSchema = createInsertSchema(referralRewards).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -303,6 +340,8 @@ export type Transaction = typeof transactions.$inferSelect;
 export type DailyLogin = typeof dailyLogins.$inferSelect;
 export type Achievement = typeof achievements.$inferSelect;
 export type UserAchievement = typeof userAchievements.$inferSelect;
+export type Referral = typeof referrals.$inferSelect;
+export type ReferralReward = typeof referralRewards.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
@@ -313,3 +352,5 @@ export type InsertChallengeMessage = z.infer<typeof insertChallengeMessageSchema
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type InsertDailyLogin = z.infer<typeof insertDailyLoginSchema>;
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
+export type InsertReferralReward = z.infer<typeof insertReferralRewardSchema>;

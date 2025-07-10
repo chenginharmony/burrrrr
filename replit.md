@@ -8,6 +8,12 @@ BetChat is a comprehensive social betting and challenge platform that combines e
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **Profile Page Redesign (July 2025)**: Complete redesign with menu-based navigation including personal info, account settings, and support sections
+- **Referral System Implementation (July 2025)**: Added comprehensive referral system with database schema, backend API, and frontend UI
+- **Event Creation Fix (July 2025)**: Improved error handling for event creation to prevent undefined event errors
+
 ## System Architecture
 
 ### Frontend Architecture

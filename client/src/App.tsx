@@ -23,6 +23,7 @@ import Leaderboard from "@/pages/Leaderboard";
 import NotFound from "@/pages/not-found";
 import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
+import ReferralPage from "@/pages/ReferralPage";
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -60,6 +61,7 @@ function AppContent() {
             <Route path="/leaderboard" component={() => <><Header title="Leaderboard" /><Leaderboard /></>} />
             <Route path="/notifications" component={() => <><Header title="Notifications" /><Notifications /></>} />
             <Route path="/profile" component={() => <><Header title="Profile" /><Profile /></>} />
+            <Route path="/referral" component={() => <><Header title="Refer & Earn" /><ReferralPage /></>} />
             <Route component={() => <><Header title="404" /><NotFound /></>} />
           </Switch>
         </div>
@@ -76,6 +78,7 @@ function AppContent() {
           <Route path="/leaderboard" component={Leaderboard} />
           <Route path="/notifications" component={Notifications} />
           <Route path="/profile" component={Profile} />
+          <Route path="/referral" component={ReferralPage} />
           <Route component={NotFound} />
         </Switch>
         <MobileNav />

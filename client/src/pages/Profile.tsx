@@ -1,416 +1,289 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { MobileFooterNav } from '@/components/MobileFooterNav';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useLocation } from 'wouter';
 import { 
+  ChevronRight, 
   User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Trophy, 
+  Settings, 
+  Gift, 
+  Shield, 
+  FileText, 
+  Trash2, 
+  HelpCircle,
+  LogOut,
+  Copy,
   Star,
-  Edit2,
-  Save,
-  X,
-  Settings,
-  LogOut
+  Users,
+  Award
 } from 'lucide-react';
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
-  const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    bio: user?.bio || '',
-    location: user?.location || '',
-    phone: user?.phone || ''
-  });
+  const [, navigate] = useLocation();
 
-  const handleSave = async () => {
-    try {
-      // Here you would make an API call to update the user profile
-      // await updateProfile(formData);
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
-      });
-      setIsEditing(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
+  const menuItems = [
+    {
+      label: 'Profile Settings',
+      path: '/settings/profile',
+      icon: User,
+    },
+    {
+      label: 'Levels & Badges',
+      path: '/levels',
+      icon: Award,
+    },
+    {
+      label: 'Settings',
+      path: '/settings',
+      icon: Settings,
+    },
+    {
+      label: 'Refer & Earn',
+      path: '/referral',
+      icon: Gift,
+    },
+    {
+      label: 'Privacy & Security',
+      path: '/privacy',
+      icon: Shield,
+    },
+    {
+      label: 'Terms of Service',
+      path: '/terms',
+      icon: FileText,
+    },
+    {
+      label: 'Data Deletion Request',
+      path: '/settings/data-deletion',
+      icon: Trash2,
+    },
+    {
+      label: 'Help & Support',
+      path: '/help',
+      icon: HelpCircle,
+    },
+  ];
+
+  const handleCopyReferralCode = async () => {
+    if (user?.id) {
+      const referralCode = `${user.username || user.id}`;
+      await navigator.clipboard.writeText(referralCode);
+      // Show feedback - you might want to add a toast here
+      console.log('Referral code copied!');
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
   };
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header title="Profile" showBackButton />
-        
-        <div className="pb-24 p-4 space-y-6">
-          {/* Profile Header */}
-          <Card className="bg-gradient-to-r from-purple-500 to-lime-500 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <Avatar className="w-20 h-20">
-                    <AvatarImage src={user?.profileImageUrl} />
-                    <AvatarFallback className="bg-white/20 text-white text-2xl">
-                      {user?.firstName?.[0]}{user?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-white text-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                    {user?.level || 1}
+      <div className="min-h-screen bg-[#F6F7FB] flex flex-col pb-[70px]">
+        <Header title="Profile" />
+        <div className="flex-1 flex flex-col items-center w-full">
+          <div className="w-full max-w-xl mx-auto px-2 sm:px-4 py-4">
+            {/* Profile Card */}
+            <div className="relative bg-white rounded-3xl px-4 pt-5 pb-4 mb-4 border border-[#f0f1fa] shadow-sm">
+              {/* Top section with actions */}
+              <div className="flex justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={handleCopyReferralCode}
+                  className="flex items-center gap-1 bg-[#F6F7FB] px-2 py-1 rounded-full text-[#7440ff] text-xs font-semibold hover:bg-[#CCFF00]/20 transition border border-[#7440ff]"
+                  title="Copy Referral Code"
+                  aria-label="Copy Referral Code"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{user?.username?.slice(0, 8) || 'Refer'}</span>
+                </button>
+              </div>
+
+              {/* Profile info section */}
+              <div className="flex flex-col items-center">
+                {/* Avatar with badges */}
+                <div className="relative mb-3">
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <img
+                        src={user?.profileImageUrl || '/placeholder-avatar.png'}
+                        alt={user?.firstName || 'User'}
+                        className="w-24 h-24 rounded-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=7440ff&color=fff&size=96`;
+                        }}
+                      />
+
+                      {/* Edit profile button - positioned directly on the edge of the avatar */}
+                      <button
+                        type="button"
+                        onClick={() => navigate('/settings/profile')}
+                        className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[#CCFF00] text-black shadow hover:bg-[#e6ff70] transition"
+                        aria-label="Edit Profile"
+                        title="Edit Profile"
+                      >
+                        <User className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Rank badge - smaller size */}
+                  {user?.level && (
+                    <div className="absolute -bottom-1 left-2">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        {user.level}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* User info */}
+                <h2 className="text-xl font-bold text-gray-900 mb-0.5 tracking-tight">
+                  {user?.firstName} {user?.lastName}
+                </h2>
+                <p className="text-gray-500 text-sm mb-2">@{user?.username}</p>
+
+                {/* Stats section - more compact */}
+                <div className="flex items-center justify-center gap-3 w-full mb-2">
+                  {/* Level badge */}
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">
+                      <Award className="w-3.5 h-3.5" />
+                      <span className="font-medium text-sm">{user?.level || 1}</span>
+                    </div>
+                    <span className="text-xs text-gray-500 mt-0.5">Level</span>
+                  </div>
+
+                  {/* Points */}
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                      <Star className="w-3.5 h-3.5" />
+                      <span className="font-medium text-sm">{user?.availablePoints || 0}</span>
+                    </div>
+                    <span className="text-xs text-gray-500 mt-0.5">Points</span>
+                  </div>
+
+                  {/* Streak */}
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                      <Users className="w-3.5 h-3.5" />
+                      <span className="font-medium text-sm">{user?.loginStreak || 0}</span>
+                    </div>
+                    <span className="text-xs text-gray-500 mt-0.5">Streak</span>
                   </div>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold">{user?.firstName} {user?.lastName}</h2>
-                  <p className="text-purple-100">Level {user?.level || 1} • {user?.xp || 0} XP</p>
-                  <div className="flex items-center gap-4 mt-2 text-sm">
-                    <span className="flex items-center gap-1">
-                      <Trophy className="w-4 h-4" />
-                      {user?.totalWins || 0} Wins
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Star className="w-4 h-4" />
-                      {user?.loginStreak || 0} Day Streak
-                    </span>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="bg-white rounded-2xl shadow divide-y divide-gray-100 mb-6 overflow-hidden border border-[#f0f1fa]">
+              {menuItems.map((item, index) => (
+                <button
+                  type="button"
+                  key={index}
+                  onClick={() => navigate(item.path)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-gray-900 hover:bg-[#F6F7FB] transition text-sm font-medium"
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="w-4 h-4 text-gray-500" />
+                    <span>{item.label}</span>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </button>
+              ))}
+            </div>
 
-          {/* Profile Information */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Profile Information</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                {isEditing ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Input
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                  disabled={!isEditing}
-                  placeholder="Tell us about yourself..."
-                />
-              </div>
-
-              {isEditing && (
-                <Button onClick={handleSave} className="w-full">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Account Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Statistics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">₦{parseFloat(user?.availablePoints || '0').toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">Available Balance</div>
-                </div>
-                <div className="p-4 bg-lime-50 rounded-lg">
-                  <div className="text-2xl font-bold text-lime-600">₦{parseFloat(user?.totalPoints || '0').toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">Total Earned</div>
-                </div>
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">{user?.totalWins || 0}</div>
-                  <div className="text-sm text-gray-600">Total Wins</div>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{user?.loginStreak || 0}</div>
-                  <div className="text-sm text-gray-600">Login Streak</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Account Actions */}
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <Settings className="w-4 h-4 mr-2" />
-                Account Settings
-              </Button>
-              <Button variant="destructive" className="w-full justify-start" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
-            </CardContent>
-          </Card>
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full py-3 bg-white text-red-500 rounded-2xl font-semibold shadow hover:bg-red-50 transition mb-4 border border-[#f0f1fa] text-sm flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
         </div>
-
         <MobileFooterNav />
       </div>
     );
   }
 
+  // Desktop version
   return (
     <div className="flex-1 p-6 space-y-6">
-      {/* Desktop Profile Content */}
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Profile Header */}
-        <Card className="bg-gradient-to-r from-purple-500 to-lime-500 text-white border-0">
-          <CardContent className="p-8">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage src={user?.profileImageUrl} />
-                  <AvatarFallback className="bg-white/20 text-white text-3xl">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white text-purple-600 rounded-full flex items-center justify-center text-lg font-bold shadow-lg">
-                  {user?.level || 1}
-                </div>
+        <div className="bg-gradient-to-r from-purple-500 to-lime-500 text-white rounded-2xl p-8">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <img
+                src={user?.profileImageUrl || '/placeholder-avatar.png'}
+                alt={user?.firstName || 'User'}
+                className="w-24 h-24 rounded-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=7440ff&color=fff&size=96`;
+                }}
+              />
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white text-purple-600 rounded-full flex items-center justify-center text-lg font-bold shadow-lg">
+                {user?.level || 1}
               </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold">{user?.firstName} {user?.lastName}</h1>
-                <p className="text-purple-100 text-lg">Level {user?.level || 1} • {user?.xp || 0} XP</p>
-                <div className="flex items-center gap-6 mt-3">
-                  <span className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5" />
-                    {user?.totalWins || 0} Wins
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Star className="w-5 h-5" />
-                    {user?.loginStreak || 0} Day Streak
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Member since {new Date(user?.createdAt || Date.now()).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-              <Button
-                variant="secondary"
-                onClick={() => setIsEditing(!isEditing)}
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-              >
-                {isEditing ? <X className="w-4 h-4 mr-2" /> : <Edit2 className="w-4 h-4 mr-2" />}
-                {isEditing ? 'Cancel' : 'Edit Profile'}
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Information */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    disabled={!isEditing}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => setFormData({...formData, location: e.target.value})}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="bio">Bio</Label>
-                  <Input
-                    id="bio"
-                    value={formData.bio}
-                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                    disabled={!isEditing}
-                    placeholder="Tell us about yourself..."
-                  />
-                </div>
-
-                {isEditing && (
-                  <Button onClick={handleSave} className="w-full">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Account Stats & Actions */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-purple-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-purple-600">₦{parseFloat(user?.availablePoints || '0').toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">Available Balance</div>
-                </div>
-                <div className="p-4 bg-lime-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-lime-600">₦{parseFloat(user?.totalPoints || '0').toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">Total Earned</div>
-                </div>
-                <div className="p-4 bg-orange-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-orange-600">{user?.totalWins || 0}</div>
-                  <div className="text-sm text-gray-600">Total Wins</div>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">{user?.loginStreak || 0}</div>
-                  <div className="text-sm text-gray-600">Login Streak</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Account Settings
-                </Button>
-                <Button variant="destructive" className="w-full justify-start" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold">{user?.firstName} {user?.lastName}</h1>
+              <p className="text-purple-100 text-lg">@{user?.username}</p>
+              <div className="flex items-center gap-6 mt-3">
+                <span className="flex items-center gap-2">
+                  <Star className="w-5 h-5" />
+                  {user?.availablePoints || 0} Points
+                </span>
+                <span className="flex items-center gap-2">
+                  <Award className="w-5 h-5" />
+                  Level {user?.level || 1}
+                </span>
+                <span className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  {user?.loginStreak || 0} Day Streak
+                </span>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Menu Items */}
+        <div className="bg-white rounded-2xl shadow divide-y divide-gray-100 overflow-hidden border border-[#f0f1fa]">
+          {menuItems.map((item, index) => (
+            <button
+              type="button"
+              key={index}
+              onClick={() => navigate(item.path)}
+              className="w-full flex items-center justify-between px-6 py-4 text-gray-900 hover:bg-[#F6F7FB] transition font-medium"
+            >
+              <div className="flex items-center gap-3">
+                <item.icon className="w-5 h-5 text-gray-500" />
+                <span>{item.label}</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+          ))}
+        </div>
+
+        {/* Logout Button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full py-4 bg-white text-red-500 rounded-2xl font-semibold shadow hover:bg-red-50 transition border border-[#f0f1fa] flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-5 h-5" />
+          Logout
+        </button>
       </div>
     </div>
   );
