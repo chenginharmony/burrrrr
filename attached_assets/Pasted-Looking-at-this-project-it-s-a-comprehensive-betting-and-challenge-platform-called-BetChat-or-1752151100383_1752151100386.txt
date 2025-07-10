@@ -1,0 +1,152 @@
+Looking at this project, it's a **comprehensive betting and challenge platform** called "BetChat" or "ChallengeBet" - a social betting application similar to Discord but focused on predictions, challenges, and wagering.
+
+## **Project Overview**
+
+This is a **Next.js 15** full-stack application that combines social features with betting/prediction functionality. Users can create events, make predictions, challenge friends, and manage their virtual wallet.
+
+## ️ **Architecture & Tech Stack**
+
+### **Frontend**
+
+- **Next.js 15** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** + **shadcn/ui** for styling
+- **Lucide React** for icons
+- **Pusher** for real-time messaging
+
+
+### **Backend & Database**
+
+- **Neon PostgreSQL** for data storage
+- **Paystack** for payment processing (Nigerian market)
+- **Server Actions** for form handling
+- **API Routes** for REST endpoints
+
+
+### **Real-time Features**
+
+- **Pusher** for live chat and notifications
+- **WebSocket connections** for event updates
+
+
+## **Core Features**
+
+### **1. Event System**
+
+- Users create prediction events (e.g., "Will Bitcoin reach $100k?")
+- Categories: Crypto, Sports, Gaming, Music, Politics
+- Pool-based betting with entry fees
+- Real-time chat for each event
+- Countdown timers and live updates
+
+
+### **2. Challenge System**
+
+- Direct 1v1 challenges between users
+- Evidence-based completion system
+- Escrow functionality for wagers
+- Challenge templates and tournaments
+- Dispute resolution system
+
+
+### **3. Social Features**
+
+- **Friends System**: Add/remove friends, friend requests
+- **Real-time Messaging**: Event chat, direct messages
+- **User Profiles**: Avatars, stats, achievements
+- **Leaderboards**: Rankings and competitions
+
+
+### **4. Wallet & Payments**
+
+- **Virtual Wallet**: Deposit/withdraw funds
+- **Paystack Integration**: Nigerian payment gateway
+- **Transaction History**: Complete audit trail
+- **Escrow System**: Secure challenge wagering
+
+
+### **5. Referral System**
+
+- **Referral Codes**: Invite friends and earn
+- **Commission Tracking**: Percentage-based earnings
+- **Social Sharing**: Built-in sharing tools
+
+
+## **User Experience**
+
+### **Responsive Design**
+
+- **Desktop**: Full navigation with sidebar
+- **Mobile**: Bottom tab navigation
+- **Progressive Web App** features
+
+
+### **Real-time Updates**
+
+- Live chat messages
+- Pool amount changes
+- Friend status updates
+- Challenge notifications
+
+
+## **Current Implementation Status**
+
+### **✅ Completed**
+
+- Complete UI/UX with responsive design
+- Mock authentication system
+- Event creation and browsing
+- Real-time chat infrastructure
+- Wallet interface
+- Friends management
+- Mobile navigation
+
+
+### **🚧 In Progress**
+
+- Database schema implementation
+- API route completion
+- Paystack payment integration
+- Real-time Pusher events
+
+
+### **📋 Planned**
+
+- User authentication (Stack Auth)
+- Admin dashboard
+- Challenge tournaments
+- Advanced analytics
+- Mobile app (React Native)
+
+
+## **Design Philosophy**
+
+The app uses a **Discord-inspired** design with:
+
+- **Purple/Lime color scheme** for branding
+- **Card-based layouts** for content
+- **Gradient accents** for visual appeal
+- **Clean typography** with proper hierarchy
+- **Intuitive navigation** patterns
+
+
+## **Target Market**
+
+Primarily targeting the **Nigerian market** with:
+
+- **Naira (₦) currency** integration
+- **Paystack payment** gateway
+- **Local betting culture** considerations
+- **Mobile-first** approach for emerging markets
+
+
+## **Unique Value Proposition**
+
+1. **Social Betting**: Combines prediction markets with social interaction
+2. **Evidence-Based Challenges**: Transparent dispute resolution
+3. **Real-time Engagement**: Live chat and updates
+4. **Gamification**: Leaderboards, achievements, referrals
+5. **Mobile Optimized**: Perfect for on-the-go betting
+
+
+This is essentially a **social prediction platform** that gamifies betting while maintaining transparency and community engagement. It's like combining Discord's social features with prediction markets and challenge-based gaming.
