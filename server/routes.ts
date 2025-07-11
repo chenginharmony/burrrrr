@@ -20,6 +20,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes are handled by setupAuth()
+  
+  // Add error handling for OAuth failures
+  app.get('/api/callback', (req, res, next) => {
+    // Check for OAuth error parameters
+    if (req.query.error) {
+      console.error('OAuth Error:', req.query.error, req.query.error_description);
+      return res.redirect('/?auth_error=1');
+    }
+    next();
+  });
 
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
