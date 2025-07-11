@@ -8,6 +8,8 @@ interface WebSocketContextType {
   leaveEventRoom: () => void;
   joinChallengeRoom: (challengeId: string) => void;
   leaveChallengeRoom: () => void;
+  eventNotification: any;
+  setEventNotification: (notification: any) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
@@ -15,6 +17,7 @@ const WebSocketContext = createContext<WebSocketContextType | undefined>(undefin
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [eventNotification, setEventNotification] = useState<any>(null);
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -28,6 +31,17 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     ws.onopen = () => {
       setIsConnected(true);
       console.log('WebSocket connected');
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'new_event_notification') {
+          setEventNotification(data.data);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
     };
     
     ws.onclose = () => {
@@ -89,7 +103,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       joinEventRoom,
       leaveEventRoom,
       joinChallengeRoom,
-      leaveChallengeRoom
+      leaveChallengeRoom,
+      eventNotification,
+      setEventNotification
     }}>
       {children}
     </WebSocketContext.Provider>

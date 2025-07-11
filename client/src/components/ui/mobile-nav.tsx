@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'wouter';
+import { Calendar, Gamepad2, Plus, Trophy, User, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
-  { name: 'Events', href: '/', icon: 'fas fa-calendar-alt' },
-  { name: 'Games', href: '/challenges', icon: 'fas fa-gamepad' },
-  { name: 'Create', href: '/', icon: 'fas fa-plus' },
-  { name: 'History', href: '/home', icon: 'fas fa-history' },
-  { name: 'Profile', href: '/profile', icon: 'fas fa-user' },
+  { name: 'Home', href: '/home', icon: Home },
+  { name: 'Events', href: '/', icon: Calendar },
+  { name: 'Games', href: '/challenges', icon: Gamepad2 },
+  { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+  { name: 'Profile', href: '/profile', icon: User },
 ];
 
 export function MobileNav() {
@@ -17,12 +18,13 @@ export function MobileNav() {
       <div className="flex items-center justify-around">
         {navigation.map((item) => {
           const isActive = location === item.href;
+          const IconComponent = item.icon;
           return (
             <Link key={item.name} href={item.href} className={cn(
               "flex flex-col items-center gap-1 p-2 text-gray-500 dark:text-gray-400",
               isActive && "text-purple-600 dark:text-purple-400"
             )}>
-              <i className={cn(item.icon, "text-lg")} />
+              <IconComponent className="h-5 w-5" />
               <span className="text-xs font-medium">{item.name}</span>
             </Link>
           );

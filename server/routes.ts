@@ -236,7 +236,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const event = await storage.createEvent(validatedData);
-      res.status(201).json(event);
+      
+      // Get creator info
+      const creator = await storage.getUser(userId);
+      const eventWithCreator = {
+        ...event,
+        creator: {
+          id: creator?.id,
+          username: creator?.username || creator?.firstName,
+        }
+      };
+      
+      res.status(201).json(eventWithCreator);
     } catch (error) {
       console.error("Error creating event:", error);
       res.status(500).json({ message: "Failed to create event" });
@@ -270,12 +281,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/notifications/broadcast', isAuthenticated, async (req: any, res) => {
     try {
       const { type, title, message, eventId } = req.body;
+      const userId = req.user.claims.sub;
       
-      // In a real app, you'd broadcast this to all connected WebSocket clients
-      // For now, we'll just log it and return success
       console.log('Broadcasting notification:', { type, title, message, eventId });
       
-      // TODO: Implement WebSocket broadcast to all connected clients
+      // Get user info for the notification
+      const creator = await storage.getUser(userId);
+      const notificationMessage = `@${creator?.username || creator?.firstName || 'Someone'} has just created a new event. Join now!`;
+      
+      // Broadcast to all connected WebSocket clients
+      const notification = {
+        type: 'new_event_notification',
+        data: {
+          type,
+          title,
+          message: notificationMessage,
+          eventId,
+          creatorId: userId,
+          creatorName: creator?.username || creator?.firstName,
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      // Send to all connected clients
+      wss.clients.forEach((client: WebSocketClient) => {
+        if (client.readyState === WebSocket.OPEN && client.userId !== userId) {
+          client.send(JSON.stringify(notification));
+        }
+      });
       
       res.json({ success: true });
     } catch (error) {

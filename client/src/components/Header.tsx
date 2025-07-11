@@ -86,7 +86,7 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white bg-opacity-95 border-b border-gray-200 shadow-sm">
+    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 bg-opacity-95 dark:bg-opacity-95 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left Section */}
@@ -105,7 +105,7 @@ export function Header({
             )}
             {/* Title always visible if provided */}
             {(title || isMobile) && (
-              <span className="font-bold text-xl text-gray-900 ml-2">{getPageTitle()}</span>
+              <span className="font-bold text-xl text-gray-900 dark:text-white ml-2">{getPageTitle()}</span>
             )}
           </div>
 

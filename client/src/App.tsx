@@ -1,5 +1,5 @@
 import { Switch, Route } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -9,6 +9,9 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { AchievementNotification } from "@/components/ui/achievement-notification";
+import { EventNotification } from "@/components/ui/event-notification";
+import { useWebSocket } from "@/contexts/WebSocketContext";
+import { queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 
 // Pages
@@ -24,23 +27,11 @@ import Profile from "@/pages/Profile";
 import ReferralPage from "@/pages/ReferralPage";
 import EventChatPage from "@/pages/EventChatPage";
 
-// Create a client outside of the component
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
-      refetchOnMount: true,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
+
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { eventNotification, setEventNotification } = useWebSocket();
   const [achievement, setAchievement] = useState<{
     title: string;
     description: string;
@@ -122,6 +113,12 @@ function AppContent() {
       <AchievementNotification
         achievement={achievement}
         onClose={() => setAchievement(null)}
+      />
+      
+      {/* Event Notification */}
+      <EventNotification
+        notification={eventNotification}
+        onClose={() => setEventNotification(null)}
       />
     </div>
   );
