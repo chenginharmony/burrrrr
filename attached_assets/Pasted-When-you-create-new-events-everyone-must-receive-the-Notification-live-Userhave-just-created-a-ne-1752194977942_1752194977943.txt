@@ -1,0 +1,46 @@
+When you create new events, everyone must receive the Notification live "@Userhave just created a new event. Join now!" - theere must be a "Creating Event, please wait" small loaoding modal while the event is being created (we dont want a static blank screen while a nnew event is bwing created) - Header is msiing on mobikle view - Mobile footer nav menu icons are missing as well. - Wallet menu will/is already on the Header as a small btton menu so remove it from the moebile menu bar and replace it with the Profile page menu icon (which is the avatar of the current user) - menus on mobile are arrange dlike this (Events | Games | Create | History | Profile)
+
+DZ
+
+chengxhan4
+Assistant
+4 minutes ago
+I'll help you implement these improvements. Let me address each issue:
+
+Live notifications for new events
+Loading modal while creating events
+Header missing on mobile view
+Missing icons in mobile footer nav
+Replace Wallet with Profile in mobile nav
+Reorder mobile nav menu items
+Let me start with the fixes:
+
+client/src/components/CreateEventForm.tsx
+client/src/hooks/useEvent.ts
+server/routes.ts
+client/src/App.tsx
+client/src/components/MobileFooterNav.tsx
+client/src/components/ui/mobile-nav.tsx
+client/src/pages/Events.tsx
+client/src/pages/Home.tsx
+client/src/pages/Profile.tsx
+client/src/pages/Challenges.tsx
+client/src/pages/Friends.tsx
+client/src/pages/Wallet.tsx
+client/src/pages/Leaderboard.tsx
+client/src/pages/Notifications.tsx
+client/src/components/Header.tsx
+Checkpoint made
+Add live notifications, loading modal, fix mobile header and nav
+10 minutes ago
+•
+i cnat see the eventss pon the events page
+
+DZ
+
+chengxhan4
+Assistant
+just now
+Looking at the error in the console logs, I can see the issue: Uncaught Error: No QueryClient set, use QueryClientProvider to set one. This means the React Query client isn't properly set up, which is preventing the events from loading.
+
+Let me check the main App component and fix the QueryClient setup:
