@@ -67,7 +67,6 @@ export default function WalletPage() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header title="Wallet" />
         <div className="pb-20 p-4 space-y-6">
           {/* Balance Card */}
           <Card className="bg-gradient-to-r from-purple-500 to-lime-500 text-white border-0">

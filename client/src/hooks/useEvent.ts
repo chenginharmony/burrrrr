@@ -48,20 +48,30 @@ export function useEvent() {
   });
 
   const createEventMutation = useMutation({
-    mutationFn: async (eventData: CreateEventData) => {
-      const response = await apiRequest('POST', '/api/events', {
-        ...eventData,
-        startTime: eventData.startTime.toISOString(),
-        endTime: eventData.endTime.toISOString(),
-      });
+    mutationFn: async (eventData: any) => {
+      const response = await apiRequest('POST', '/api/events', eventData);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/events'] });
       toast({
         title: "Success",
         description: "Event created successfully",
       });
+
+      // Broadcast notification to all users
+      fetch('/api/notifications/broadcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'new_event',
+          title: 'New Event Created!',
+          message: `@${data.creator?.username || 'Someone'} have just created a new event. Join now!`,
+          eventId: data.id,
+        }),
+      }).catch(console.error);
     },
     onError: (error) => {
       toast({

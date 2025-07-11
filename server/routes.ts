@@ -266,6 +266,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Broadcast notification to all users
+  app.post('/api/notifications/broadcast', isAuthenticated, async (req: any, res) => {
+    try {
+      const { type, title, message, eventId } = req.body;
+      
+      // In a real app, you'd broadcast this to all connected WebSocket clients
+      // For now, we'll just log it and return success
+      console.log('Broadcasting notification:', { type, title, message, eventId });
+      
+      // TODO: Implement WebSocket broadcast to all connected clients
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error broadcasting notification:", error);
+      res.status(500).json({ message: "Failed to broadcast notification" });
+    }
+  });
+
   // Event messages routes
   app.get('/api/events/:id/messages', async (req, res) => {
     try {

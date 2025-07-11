@@ -98,7 +98,6 @@ export default function Events() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header title="Events" />
         <div className="pb-20 p-4 space-y-4">
           {/* Search and Filter */}
           <div className="space-y-3">

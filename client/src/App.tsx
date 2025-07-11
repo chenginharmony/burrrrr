@@ -101,6 +101,7 @@ function AppContent() {
 
       {/* Mobile Layout */}
       <div className="lg:hidden flex flex-col h-full w-full">
+        <Header />
         <Switch>
           <Route path="/" component={Events} />
           <Route path="/home" component={Home} />

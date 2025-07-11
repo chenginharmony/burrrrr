@@ -65,7 +65,6 @@ export default function Leaderboard() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header title="Leaderboard" />
         <div className="pb-20 p-4 space-y-4">
           {/* Current User Rank */}
           {currentUserRank > 0 && (

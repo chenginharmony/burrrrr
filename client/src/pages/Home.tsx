@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useEvent } from '@/hooks/useEvent';
@@ -33,8 +32,6 @@ export default function Home() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header title="BetChat" showStreak />
-        
         <div className="pb-24 p-4 space-y-6">
           {/* User Profile Banner */}
           {user && (
@@ -62,7 +59,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold">₦{parseFloat(user.availablePoints || '0').toLocaleString()}</div>
@@ -196,7 +193,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-gradient-to-r from-green-400 to-blue-500 p-4 rounded-lg text-white">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -325,7 +322,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-green-400 to-blue-500 p-4 rounded-lg text-white">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -337,7 +334,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-purple-400 to-pink-500 p-4 rounded-lg text-white">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">

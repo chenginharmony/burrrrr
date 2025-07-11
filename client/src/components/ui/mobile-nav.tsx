@@ -3,10 +3,10 @@ import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Events', href: '/', icon: 'fas fa-calendar-alt' },
-  { name: 'Dashboard', href: '/home', icon: 'fas fa-home' },
-  { name: 'Challenges', href: '/challenges', icon: 'fas fa-gamepad' },
-  { name: 'Friends', href: '/friends', icon: 'fas fa-users' },
-  { name: 'Wallet', href: '/wallet', icon: 'fas fa-wallet' },
+  { name: 'Games', href: '/challenges', icon: 'fas fa-gamepad' },
+  { name: 'Create', href: '/', icon: 'fas fa-plus' },
+  { name: 'History', href: '/home', icon: 'fas fa-history' },
+  { name: 'Profile', href: '/profile', icon: 'fas fa-user' },
 ];
 
 export function MobileNav() {

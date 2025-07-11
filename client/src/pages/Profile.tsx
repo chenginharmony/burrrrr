@@ -85,7 +85,6 @@ export default function Profile() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-[#F6F7FB] flex flex-col pb-[70px]">
-        <Header title="Profile" />
         <div className="flex-1 flex flex-col items-center w-full">
           <div className="w-full max-w-xl mx-auto px-2 sm:px-4 py-4">
             {/* Profile Card */}

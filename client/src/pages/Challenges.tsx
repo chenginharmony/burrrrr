@@ -81,7 +81,6 @@ export default function Challenges() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header title="Challenges" />
         <div className="pb-20 p-4 space-y-4">
           {/* Main Tabs */}
           <Tabs value={mainTab} onValueChange={(value) => setMainTab(value as 'challenges' | 'friends')}>

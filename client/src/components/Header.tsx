@@ -31,6 +31,32 @@ export function Header({
   showStreak = false
 }: HeaderProps) {
   const [location, navigate] = useLocation();
+  
+  // Dynamic title based on route
+  const getPageTitle = () => {
+    if (title) return title;
+    
+    switch (location) {
+      case '/':
+        return 'Events';
+      case '/home':
+        return 'Dashboard';
+      case '/challenges':
+        return 'Challenges';
+      case '/friends':
+        return 'Friends';
+      case '/wallet':
+        return 'Wallet';
+      case '/profile':
+        return 'Profile';
+      case '/leaderboard':
+        return 'Leaderboard';
+      case '/notifications':
+        return 'Notifications';
+      default:
+        return 'BetChat';
+    }
+  };
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,8 +104,8 @@ export function Header({
               </div>
             )}
             {/* Title always visible if provided */}
-            {title && (
-              <span className="font-bold text-xl text-gray-900 ml-2">{title}</span>
+            {(title || isMobile) && (
+              <span className="font-bold text-xl text-gray-900 ml-2">{getPageTitle()}</span>
             )}
           </div>
 

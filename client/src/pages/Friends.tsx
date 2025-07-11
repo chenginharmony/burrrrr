@@ -118,7 +118,6 @@ export default function Friends() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header title="Friends" />
         <div className="pb-20 p-4 space-y-4">
           {/* Stats */}
           <Card>

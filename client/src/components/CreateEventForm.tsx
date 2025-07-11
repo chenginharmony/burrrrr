@@ -35,6 +35,20 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [rules, setRules] = useState('');
 
+  // Loading Modal Component
+  const LoadingModal = () => {
+    if (!loading) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <p className="text-gray-700 font-medium">Creating Event, please wait...</p>
+        </div>
+      </div>
+    );
+  };
+
   const { createEvent } = useEvent();
   const { toast } = useToast();
 
@@ -224,8 +238,10 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardContent className="p-6 space-y-6">
+    <>
+      <LoadingModal />
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="p-6 space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Two Column Layout for Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -466,6 +482,7 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({
         </form>
       </CardContent>
     </Card>
+    </>
   );
 };
 

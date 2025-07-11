@@ -24,7 +24,7 @@ export function MobileFooterNav() {
   const navItems = [
     {
       id: 'events',
-      path: '/events',
+      path: '/',
       icon: <i className="fas fa-calendar-alt text-xl" />,
       label: 'Events',
       badge: activeEvents > 0 ? formatNotificationCount(activeEvents) : undefined,
@@ -44,10 +44,10 @@ export function MobileFooterNav() {
       isMain: true,
     },
     {
-      id: 'friends',
-      path: '/friends',
-      icon: <i className="fas fa-users text-xl" />,
-      label: 'Friends',
+      id: 'history',
+      path: '/home',
+      icon: <i className="fas fa-history text-xl" />,
+      label: 'History',
     },
     {
       id: 'profile',
