@@ -259,11 +259,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { prediction, wagerAmount } = req.body;
 
+      // Check if user has sufficient balance
+      const user = await storage.getUser(userId);
+      if (!user || parseFloat(user.availablePoints || '0') < wagerAmount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      // Check if user already joined this event
+      const existingParticipation = await db.select()
+        .from(eventParticipants)
+        .where(and(
+          eq(eventParticipants.eventId, req.params.id),
+          eq(eventParticipants.userId, userId)
+        ))
+        .limit(1);
+
+      if (existingParticipation.length > 0) {
+        return res.status(400).json({ message: "Already joined this event" });
+      }
+
+      // Deduct wager amount from user's balance
+      if (wagerAmount > 0) {
+        await db
+          .update(users)
+          .set({
+            availablePoints: sql`${users.availablePoints} - ${wagerAmount}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId));
+      }
+
       await storage.joinEvent(req.params.id, userId, prediction, wagerAmount || 0);
       res.json({ message: "Successfully joined event" });
     } catch (error) {
       console.error("Error joining event:", error);
       res.status(500).json({ message: "Failed to join event" });
+    }
+  });
+
+  // Get event pool data
+  app.get('/api/events/:id/pool', async (req, res) => {
+    try {
+      const eventId = req.params.id;
+      
+      // Get pool amounts
+      const [pool] = await db.select()
+        .from(eventPools)
+        .where(eq(eventPools.eventId, eventId))
+        .limit(1);
+
+      // Get participant counts
+      const participantCounts = await db.select({
+        prediction: eventParticipants.prediction,
+        count: sql<number>`count(*)`,
+      })
+      .from(eventParticipants)
+      .where(eq(eventParticipants.eventId, eventId))
+      .groupBy(eventParticipants.prediction);
+
+      const yesCount = participantCounts.find(p => p.prediction === true)?.count || 0;
+      const noCount = participantCounts.find(p => p.prediction === false)?.count || 0;
+
+      res.json({
+        totalAmount: parseFloat(pool?.totalAmount || '0'),
+        yesAmount: parseFloat(pool?.yesAmount || '0'),
+        noAmount: parseFloat(pool?.noAmount || '0'),
+        yesParticipants: yesCount,
+        noParticipants: noCount,
+      });
+    } catch (error) {
+      console.error("Error fetching event pool:", error);
+      res.status(500).json({ message: "Failed to fetch event pool" });
+    }
+  });
+
+  // Get user participation in event
+  app.get('/api/events/:id/participation/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: eventId, userId } = req.params;
+      const currentUserId = req.user.claims.sub;
+
+      // Only allow users to check their own participation
+      if (currentUserId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const [participation] = await db.select()
+        .from(eventParticipants)
+        .where(and(
+          eq(eventParticipants.eventId, eventId),
+          eq(eventParticipants.userId, userId)
+        ))
+        .limit(1);
+
+      if (!participation) {
+        return res.json({ hasJoined: false });
+      }
+
+      res.json({
+        hasJoined: true,
+        prediction: participation.prediction,
+        amount: parseFloat(participation.wagerAmount || '0'),
+        joinedAt: participation.joinedAt,
+      });
+    } catch (error) {
+      console.error("Error fetching user participation:", error);
+      res.status(500).json({ message: "Failed to fetch user participation" });
     }
   });
 
