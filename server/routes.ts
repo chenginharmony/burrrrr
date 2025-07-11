@@ -161,10 +161,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Events routes
-  app.get('/api/events', async (req, res) => {
+  app.get('/api/events', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const searchQuery = req.query.search as string;
-      const events = await storage.getEvents(searchQuery);
+      const useRecommendations = req.query.recommended === 'true';
+      
+      let events;
+      if (useRecommendations && !searchQuery) {
+        // Get personalized recommendations
+        const recommendedEvents = await storage.getRecommendedEvents(userId, 20);
+        const regularEvents = await storage.getEvents();
+        
+        // Combine recommended and regular events, prioritizing recommendations
+        const recommendedIds = new Set(recommendedEvents.map(e => e.id));
+        const otherEvents = regularEvents.filter(e => !recommendedIds.has(e.id));
+        
+        events = [...recommendedEvents, ...otherEvents.slice(0, 10)];
+      } else {
+        events = await storage.getEvents(searchQuery);
+      }
+      
       res.json(events);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -227,6 +244,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Event recommendations route
+  app.get('/api/events/recommended/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // Verify user can access these recommendations
+      if (req.user.claims.sub !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const recommendations = await storage.getRecommendedEvents(userId, limit);
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+      res.status(500).json({ message: "Failed to fetch recommendations" });
+    }
+  });
+
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -258,6 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { prediction, wagerAmount } = req.body;
+      const eventId = req.params.id;
 
       // Check if user has sufficient balance
       const user = await storage.getUser(userId);
@@ -269,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingParticipation = await db.select()
         .from(eventParticipants)
         .where(and(
-          eq(eventParticipants.eventId, req.params.id),
+          eq(eventParticipants.eventId, eventId),
           eq(eventParticipants.userId, userId)
         ))
         .limit(1);
@@ -289,8 +326,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(users.id, userId));
       }
 
-      await storage.joinEvent(req.params.id, userId, prediction, wagerAmount || 0);
-      res.json({ message: "Successfully joined event" });
+      // Join the event
+      await storage.joinEvent(eventId, userId, prediction, wagerAmount || 0);
+
+      // Track user interaction for recommendations
+      await storage.trackUserInteraction(userId, eventId, 'bet', {
+        prediction,
+        wagerAmount,
+        timestamp: new Date().toISOString()
+      });
+
+      // Send "looking for match" notification
+      await storage.createNotification({
+        userId,
+        type: 'bet_placed',
+        title: 'Bet Placed',
+        content: 'You are currently being matched, please wait...',
+        metadata: { eventId, prediction, wagerAmount }
+      });
+
+      // Broadcast notification via WebSocket
+      broadcastToEventRoom(eventId, 'bet_placed', {
+        userId,
+        prediction,
+        wagerAmount,
+        message: 'Looking for opponent...'
+      });
+
+      // Look for matching opponent
+      const matchedUserId = await storage.findEventMatch(eventId, userId, prediction, wagerAmount);
+      
+      if (matchedUserId) {
+        // Get matched user details
+        const matchedUser = await storage.getUser(matchedUserId);
+        
+        // Create match record
+        await storage.createEventMatch(
+          eventId,
+          userId,
+          matchedUserId,
+          prediction,
+          !prediction,
+          wagerAmount,
+          wagerAmount
+        );
+
+        // Send match notifications to both users
+        await storage.createNotification({
+          userId,
+          type: 'match_found',
+          title: 'Match Found!',
+          content: `You have been matched with @${matchedUser?.username || 'user'}, Good luck!`,
+          metadata: { eventId, opponentId: matchedUserId, opponentUsername: matchedUser?.username }
+        });
+
+        await storage.createNotification({
+          userId: matchedUserId,
+          type: 'match_found',
+          title: 'Match Found!',
+          content: `You have been matched with @${user.username || 'user'}, Good luck!`,
+          metadata: { eventId, opponentId: userId, opponentUsername: user.username }
+        });
+
+        // Broadcast match found notifications
+        broadcastToEventRoom(eventId, 'match_found', {
+          user1: { id: userId, username: user.username, prediction },
+          user2: { id: matchedUserId, username: matchedUser?.username, prediction: !prediction },
+          eventId
+        });
+      }
+
+      res.json({ 
+        message: "Successfully joined event",
+        matched: !!matchedUserId,
+        matchedWith: matchedUserId ? matchedUserId : null
+      });
     } catch (error) {
       console.error("Error joining event:", error);
       res.status(500).json({ message: "Failed to join event" });

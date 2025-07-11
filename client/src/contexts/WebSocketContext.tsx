@@ -10,6 +10,8 @@ interface WebSocketContextType {
   leaveChallengeRoom: () => void;
   eventNotification: any;
   setEventNotification: (notification: any) => void;
+  matchNotification: any;
+  setMatchNotification: (notification: any) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [eventNotification, setEventNotification] = useState<any>(null);
+  const [matchNotification, setMatchNotification] = useState<any>(null);
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -36,8 +39,37 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        
         if (data.type === 'new_event_notification') {
           setEventNotification(data.data);
+        } else if (data.type === 'bet_placed') {
+          setMatchNotification({
+            type: 'bet_placed',
+            title: 'Bet Placed',
+            content: 'You are currently being matched, please wait...',
+            metadata: data.data
+          });
+        } else if (data.type === 'match_found') {
+          setMatchNotification({
+            type: 'match_found',
+            title: 'Match Found!',
+            content: `You have been matched with @${data.data.user2?.username || 'opponent'}, Good luck!`,
+            metadata: {
+              eventId: data.data.eventId,
+              opponentId: data.data.user2?.id,
+              opponentUsername: data.data.user2?.username,
+              wagerAmount: data.data.user1?.prediction === true ? data.data.user1Amount : data.data.user2Amount
+            }
+          });
+        } else if (data.type === 'event_ended') {
+          setMatchNotification({
+            type: 'event_ended',
+            title: data.data.isWin ? 'Congratulations!' : 'Event Ended',
+            content: data.data.isWin 
+              ? `Congrats, the event "${data.data.eventTitle}" has ended, check your wallet for your win!`
+              : `The event "${data.data.eventTitle}" has ended. Better luck next time!`,
+            metadata: data.data
+          });
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -105,7 +137,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       joinChallengeRoom,
       leaveChallengeRoom,
       eventNotification,
-      setEventNotification
+      setEventNotification,
+      matchNotification,
+      setMatchNotification
     }}>
       {children}
     </WebSocketContext.Provider>

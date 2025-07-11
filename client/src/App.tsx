@@ -10,6 +10,7 @@ import { Header } from "@/components/Header";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { AchievementNotification } from "@/components/ui/achievement-notification";
 import { EventNotification } from "@/components/ui/event-notification";
+import { MatchNotification } from "@/components/ui/match-notification";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { queryClient } from "@/lib/queryClient";
 import { useState } from "react";
@@ -31,7 +32,7 @@ import EventChatPage from "@/pages/EventChatPage";
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { eventNotification, setEventNotification } = useWebSocket();
+  const { eventNotification, setEventNotification, matchNotification, setMatchNotification } = useWebSocket();
   const [achievement, setAchievement] = useState<{
     title: string;
     description: string;
@@ -119,6 +120,12 @@ function AppContent() {
       <EventNotification
         notification={eventNotification}
         onClose={() => setEventNotification(null)}
+      />
+      
+      {/* Match Notification */}
+      <MatchNotification
+        notification={matchNotification}
+        onClose={() => setMatchNotification(null)}
       />
     </div>
   );

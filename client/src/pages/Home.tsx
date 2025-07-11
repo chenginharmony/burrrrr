@@ -9,6 +9,7 @@ import { StatsCard } from '@/components/StatsCard';
 import { DailyLoginBonus } from '@/components/DailyLoginBonus';
 import { EventCard } from '@/components/EventCard';
 import { ChallengeCard } from '@/components/ChallengeCard';
+import { RecommendedEvents } from '@/components/RecommendedEvents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Gamepad2, Users, Trophy, Target, Calendar } from 'lucide-react';
@@ -244,6 +245,9 @@ export default function Home() {
 
       {/* Daily Login Bonus */}
       <DailyLoginBonus />
+
+      {/* AI Recommendations */}
+      <RecommendedEvents />
 
       {/* Recent Activity & Live Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

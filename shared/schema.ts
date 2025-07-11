@@ -232,6 +232,48 @@ export const referralRewards = pgTable("referral_rewards", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// User preferences for recommendations
+export const userPreferences = pgTable("user_preferences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  favoriteCategories: jsonb("favorite_categories").$type<string[]>().default([]),
+  preferredWagerRange: jsonb("preferred_wager_range").$type<{min: number, max: number}>(),
+  riskTolerance: varchar("risk_tolerance", { length: 20 }).default("medium"), // low, medium, high
+  activeHours: jsonb("active_hours").$type<number[]>().default([]), // hours when user is most active
+  followedCreators: jsonb("followed_creators").$type<string[]>().default([]),
+  blockedCategories: jsonb("blocked_categories").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User interaction tracking for recommendations
+export const userInteractions = pgTable("user_interactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  eventId: uuid("event_id").references(() => events.id),
+  challengeId: uuid("challenge_id").references(() => challenges.id),
+  interactionType: varchar("interaction_type", { length: 50 }).notNull(), // view, join, bet, share, like
+  metadata: jsonb("metadata"), // additional data like time spent, amount wagered, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Event matching notifications
+export const eventMatches = pgTable("event_matches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").references(() => events.id).notNull(),
+  user1Id: varchar("user1_id").references(() => users.id).notNull(),
+  user2Id: varchar("user2_id").references(() => users.id).notNull(),
+  user1Prediction: boolean("user1_prediction").notNull(),
+  user2Prediction: boolean("user2_prediction").notNull(),
+  user1Amount: decimal("user1_amount", { precision: 10, scale: 2 }).notNull(),
+  user2Amount: decimal("user2_amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 20 }).default("active"), // active, completed, cancelled
+  winnerId: varchar("winner_id").references(() => users.id),
+  payoutAmount: decimal("payout_amount", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdEvents: many(events),
@@ -328,6 +370,23 @@ export const insertReferralRewardSchema = createInsertSchema(referralRewards).om
   createdAt: true,
 });
 
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserInteractionSchema = createInsertSchema(userInteractions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEventMatchSchema = createInsertSchema(eventMatches).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -355,3 +414,9 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type InsertDailyLogin = z.infer<typeof insertDailyLoginSchema>;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type InsertReferralReward = z.infer<typeof insertReferralRewardSchema>;
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type UserInteraction = typeof userInteractions.$inferSelect;
+export type EventMatch = typeof eventMatches.$inferSelect;
+export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
+export type InsertUserInteraction = z.infer<typeof insertUserInteractionSchema>;
+export type InsertEventMatch = z.infer<typeof insertEventMatchSchema>;

@@ -108,6 +108,15 @@ export interface IStorage {
   }>;
   applyReferralCode(referralCode: string, userId: string): Promise<boolean>;
   createReferralReward(referrerId: string, referredId: string, amount: number, type: string): Promise<void>;
+
+  // Recommendation operations
+  getRecommendedEvents(userId: string, limit?: number): Promise<Event[]>;
+  trackUserInteraction(userId: string, eventId: string, interactionType: string, metadata?: any): Promise<void>;
+
+  // Event matching operations
+  findEventMatch(eventId: string, userId: string, prediction: boolean, amount: number): Promise<string | null>;
+  createEventMatch(eventId: string, user1Id: string, user2Id: string, user1Prediction: boolean, user2Prediction: boolean, user1Amount: number, user2Amount: number): Promise<void>;
+  completeEventMatch(matchId: string, winnerId: string, payoutAmount: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -683,6 +692,77 @@ export class DatabaseStorage implements IStorage {
 
     // Update referrer's points
     await this.updateUserPoints(referrerId, amount, amount * 2);
+  }
+
+  // Recommendation operations
+  async getRecommendedEvents(userId: string, limit: number = 10): Promise<Event[]> {
+    const { recommendationEngine } = await import('./recommendationEngine');
+    const recommendedIds = await recommendationEngine.getRecommendations(userId, limit);
+    
+    if (recommendedIds.length === 0) {
+      return [];
+    }
+    
+    return await db.select()
+      .from(events)
+      .where(inArray(events.id, recommendedIds))
+      .orderBy(desc(events.createdAt));
+  }
+
+  async trackUserInteraction(userId: string, eventId: string, interactionType: string, metadata?: any): Promise<void> {
+    const { recommendationEngine } = await import('./recommendationEngine');
+    await recommendationEngine.updateUserPreferences(userId, eventId, interactionType);
+  }
+
+  // Event matching operations
+  async findEventMatch(eventId: string, userId: string, prediction: boolean, amount: number): Promise<string | null> {
+    // Look for pending participants with opposite prediction and similar wager amount
+    const oppositeParticipants = await db.select({
+      id: eventParticipants.id,
+      userId: eventParticipants.userId,
+      wagerAmount: eventParticipants.wagerAmount,
+      prediction: eventParticipants.prediction,
+    })
+    .from(eventParticipants)
+    .where(and(
+      eq(eventParticipants.eventId, eventId),
+      eq(eventParticipants.prediction, !prediction),
+      // Look for similar wager amounts (within 20% range)
+      gte(eventParticipants.wagerAmount, (amount * 0.8).toString()),
+      lte(eventParticipants.wagerAmount, (amount * 1.2).toString())
+    ))
+    .orderBy(desc(eventParticipants.joinedAt))
+    .limit(1);
+
+    if (oppositeParticipants.length > 0) {
+      return oppositeParticipants[0].userId;
+    }
+    
+    return null;
+  }
+
+  async createEventMatch(eventId: string, user1Id: string, user2Id: string, user1Prediction: boolean, user2Prediction: boolean, user1Amount: number, user2Amount: number): Promise<void> {
+    await db.insert(eventMatches).values({
+      eventId,
+      user1Id,
+      user2Id,
+      user1Prediction,
+      user2Prediction,
+      user1Amount: user1Amount.toString(),
+      user2Amount: user2Amount.toString(),
+      status: 'active',
+    });
+  }
+
+  async completeEventMatch(matchId: string, winnerId: string, payoutAmount: number): Promise<void> {
+    await db.update(eventMatches)
+      .set({
+        status: 'completed',
+        winnerId,
+        payoutAmount: payoutAmount.toString(),
+        completedAt: new Date(),
+      })
+      .where(eq(eventMatches.id, matchId));
   }
 }
 
