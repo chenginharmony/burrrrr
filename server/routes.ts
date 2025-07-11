@@ -7,7 +7,8 @@ import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, ins
 import { z } from "zod";
 import passport from "passport";
 import { db } from "./db";
-import { eq, and, or, sql } from "drizzle-orm";
+import { eq, and, or, sql, ne } from "drizzle-orm";
+import crypto from 'crypto';
 
 interface WebSocketClient extends WebSocket {
   userId?: string;
@@ -475,15 +476,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user profile by ID
+  app.get('/api/users/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+
+      const profile = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          profileImageUrl: true,
+          level: true,
+          xp: true,
+          availablePoints: true,
+          totalPoints: true,
+          loginStreak: true,
+          createdAt: true,
+        },
+      });
+
+      if (!profile) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Calculate stats (you might want to add actual data from your DB)
+      const stats = {
+        eventsWon: 0,
+        totalEvents: 0,
+        totalEarnings: 0,
+        followersCount: 0,
+        followingCount: 0,
+        winRate: 0,
+      };
+
+      // Check if current user is following this profile (implement your follow logic)
+      const isFollowing = false;
+
+      const profileData = {
+        ...profile,
+        stats,
+        isFollowing,
+      };
+
+      res.json(profileData);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+  });
+
   // Friends routes
   app.get('/api/friends', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const friends = await storage.getUserFriends(userId);
+      const friends = await db.query.users.findMany({
+        where: ne(users.id, req.user.id),
+        columns: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          profileImageUrl: true,
+          level: true,
+          xp: true,
+          availablePoints: true,
+          totalPoints: true,
+          loginStreak: true,
+          createdAt: true,
+        },
+        limit: 50,
+      });
+
       res.json(friends);
     } catch (error) {
       console.error("Error fetching friends:", error);
       res.status(500).json({ message: "Failed to fetch friends" });
+    }
+  });
+
+    // Follow/Unfollow user
+  app.post('/api/users/:userId/follow', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+
+      if (userId === req.user.id) {
+        return res.status(400).json({ error: 'Cannot follow yourself' });
+      }
+
+      // Check if user exists
+      const targetUser = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+      });
+
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // TODO: Implement follow logic in your database
+      // For now, just return success
+      res.json({ success: true, message: 'User followed successfully' });
+    } catch (error) {
+      console.error('Error following user:', error);
+      res.status(500).json({ error: 'Failed to follow user' });
+    }
+  });
+
+  app.post('/api/users/:userId/unfollow', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+
+      // TODO: Implement unfollow logic in your database
+      // For now, just return success
+      res.json({ success: true, message: 'User unfollowed successfully' });
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      res.status(500).json({ error: 'Failed to unfollow user' });
+    }
+  });
+
+  // Send tip to user
+  app.post('/api/transactions/tip', isAuthenticated, async (req: any, res) => {
+    try {
+      const { recipientId, amount } = req.body;
+
+      if (!recipientId || !amount || amount <= 0) {
+        return res.status(400).json({ error: 'Valid recipient ID and amount are required' });
+      }
+
+      // Check if user has enough balance
+      const currentUser = await db.query.users.findFirst({
+        where: eq(users.id, req.user.id),
+      });
+
+      if (!currentUser || parseFloat(currentUser.availablePoints) < amount) {
+        return res.status(400).json({ error: 'Insufficient balance' });
+      }
+
+      // Check if recipient exists
+      const recipient = await db.query.users.findFirst({
+        where: eq(users.id, recipientId),
+      });
+
+      if (!recipient) {
+        return res.status(404).json({ error: 'Recipient not found' });
+      }
+
+      // Create transactions
+      const tipTransaction = await db.insert(transactions).values({
+        id: crypto.randomUUID(),
+        userId: req.user.id,
+        type: 'tip_sent',
+        amount: amount.toString(),
+        description: `Tip sent to ${recipient.firstName || 'User'}`,
+        status: 'completed',
+        createdAt: new Date(),
+      }).returning();
+
+      await db.insert(transactions).values({
+        id: crypto.randomUUID(),
+        userId: recipientId,
+        type: 'tip_received',
+        amount: amount.toString(),
+        description: `Tip received from ${currentUser.firstName || 'User'}`,
+        status: 'completed',
+        createdAt: new Date(),
+      });
+
+      // Update balances
+      await db.update(users)
+        .set({ 
+          availablePoints: sql`${users.availablePoints} - ${amount}`
+        })
+        .where(eq(users.id, req.user.id));
+
+      await db.update(users)
+        .set({ 
+          availablePoints: sql`${users.availablePoints} + ${amount}`,
+          totalPoints: sql`${users.totalPoints} + ${amount}`
+        })
+        .where(eq(users.id, recipientId));
+
+      res.status(201).json({ success: true, transaction: tipTransaction[0] });
+    } catch (error) {
+      console.error('Error sending tip:', error);
+      res.status(500).json({ error: 'Failed to send tip' });
     }
   });
 
@@ -574,6 +752,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error applying referral code:", error);
       res.status(500).json({ message: "Failed to apply referral code" });
+    }
+  });
+
+    // Create a new transaction
+  app.post('/api/transactions', isAuthenticated, async (req: any, res) => {
+    try {
+      const { type, amount, description } = req.body;
+
+      if (!type || amount === undefined) {
+        return res.status(400).json({ error: 'Type and amount are required' });
+      }
+
+      const transaction = await db.insert(transactions).values({
+        id: crypto.randomUUID(),
+        userId: req.user.id,
+        type,
+        amount: amount.toString(),
+        description: description || '',
+        status: 'completed',
+        createdAt: new Date(),
+      }).returning();
+
+      // Update user points
+      if (type === 'deposit') {
+        await db.update(users)
+          .set({ 
+            availablePoints: sql`${users.availablePoints} + ${amount}`,
+            totalPoints: sql`${users.totalPoints} + ${amount}`
+          })
+          .where(eq(users.id, req.user.id));
+      } else if (type === 'withdrawal') {
+        await db.update(users)
+          .set({ 
+            availablePoints: sql`${users.availablePoints} - ${amount}`
+          })
+          .where(eq(users.id, req.user.id));
+      }
+
+      res.status(201).json(transaction[0]);
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      res.status(500).json({ error: 'Failed to create transaction' });
     }
   });
 

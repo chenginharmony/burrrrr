@@ -44,9 +44,22 @@ export function ProfileCard({ userId, onClose }: ProfileCardProps) {
   const queryClient = useQueryClient();
 
   // Fetch user profile data
-  const { data: profile, isLoading } = useQuery<ProfileData>({
+  const { data: profile, isLoading, error } = useQuery<ProfileData>({
     queryKey: ['/api/users', userId],
+    queryFn: async () => {
+      const response = await fetch(`/api/users/${userId}`, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user profile: ${response.status}`);
+      }
+      return response.json();
+    },
     enabled: !!userId,
+    retry: 1,
   });
 
   // Follow/Unfollow mutation
@@ -149,8 +162,35 @@ export function ProfileCard({ userId, onClose }: ProfileCardProps) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={handleBackdropClick}>
         <div className="bg-white rounded-2xl p-6 w-full max-w-md bg-cover bg-center relative">
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 bg-white/80 hover:bg-white rounded-full transition-colors z-10"
+          >
+            <X className="w-4 h-4 text-gray-600" />
+          </button>
           <div className="flex justify-center items-center h-40">
             <Loader className="animate-spin text-purple-500" size={32} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={handleBackdropClick}>
+        <div className="bg-white rounded-2xl p-6 w-full max-w-md bg-cover bg-center relative">
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 bg-white/80 hover:bg-white rounded-full transition-colors z-10"
+          >
+            <X className="w-4 h-4 text-gray-600" />
+          </button>
+          <div className="flex justify-center items-center h-40 text-center">
+            <div>
+              <p className="text-red-500 mb-2">Failed to load profile</p>
+              <p className="text-gray-500 text-sm">{error.message}</p>
+            </div>
           </div>
         </div>
       </div>
