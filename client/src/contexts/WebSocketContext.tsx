@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { MatchNotification } from '@/components/ui/match-notification';
 
 interface WebSocketContextType {
   socket: WebSocket | null;
@@ -142,6 +143,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setMatchNotification
     }}>
       {children}
+      <MatchNotification 
+        notification={matchNotification} 
+        onClose={() => setMatchNotification(null)} 
+      />
     </WebSocketContext.Provider>
   );
 }

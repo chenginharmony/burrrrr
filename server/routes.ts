@@ -9,6 +9,7 @@ import passport from "passport";
 import { db } from "./db";
 import { eq, and, or, sql, ne } from "drizzle-orm";
 import crypto from 'crypto';
+import { paystackService } from './paystack';
 
 interface WebSocketClient extends WebSocket {
   userId?: string;
@@ -1118,6 +1119,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   }
+
+  // Wallet routes
+  app.post('/api/wallet/deposit', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { amount } = req.body;
+      
+      if (!amount || amount < 100) {
+        return res.status(400).json({ message: "Minimum deposit amount is ₦100" });
+      }
+      
+      if (amount > 1000000) {
+        return res.status(400).json({ message: "Maximum deposit amount is ₦1,000,000" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.email) {
+        return res.status(400).json({ message: "User email not found" });
+      }
+      
+      const reference = paystackService.generateReference();
+      
+      const response = await paystackService.initializeTransaction(
+        amount,
+        user.email,
+        reference
+      );
+      
+      if (response.status) {
+        res.json({
+          authorization_url: response.data.authorization_url,
+          access_code: response.data.access_code,
+          reference: reference
+        });
+      } else {
+        res.status(400).json({ message: response.message });
+      }
+    } catch (error) {
+      console.error("Error initializing deposit:", error);
+      res.status(500).json({ message: "Failed to initialize deposit" });
+    }
+  });
+
+  app.post('/api/wallet/verify-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { reference } = req.body;
+      
+      const response = await paystackService.verifyTransaction(reference);
+      
+      if (response.status && response.data.status === 'success') {
+        const amount = response.data.amount / 100; // Convert from kobo
+        
+        // Update user balance
+        await db
+          .update(users)
+          .set({
+            availablePoints: sql`${users.availablePoints} + ${amount}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId));
+        
+        // Create transaction record
+        await storage.createTransaction({
+          userId,
+          type: 'deposit',
+          amount: amount.toString(),
+          description: `Wallet deposit via Paystack`,
+          status: 'completed',
+          referenceId: reference,
+          metadata: response.data
+        });
+        
+        res.json({ message: "Payment verified and balance updated" });
+      } else {
+        res.status(400).json({ message: "Payment verification failed" });
+      }
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  app.post('/api/wallet/withdraw', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { amount, accountNumber, bankCode, accountName } = req.body;
+      
+      if (!amount || amount < 500) {
+        return res.status(400).json({ message: "Minimum withdrawal amount is ₦500" });
+      }
+      
+      const user = await storage.getUser(userId);
+      const balance = parseFloat(user?.availablePoints || '0');
+      
+      if (amount > balance) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Deduct amount from user's balance
+      await db
+        .update(users)
+        .set({
+          availablePoints: sql`${users.availablePoints} - ${amount}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+      
+      // Create transaction record
+      await storage.createTransaction({
+        userId,
+        type: 'withdraw',
+        amount: amount.toString(),
+        description: `Withdrawal request`,
+        status: 'pending',
+        metadata: { accountNumber, bankCode, accountName }
+      });
+      
+      res.json({ message: "Withdrawal request submitted successfully" });
+    } catch (error) {
+      console.error("Error processing withdrawal:", error);
+      res.status(500).json({ message: "Failed to process withdrawal" });
+    }
+  });
 
   return httpServer;
 }

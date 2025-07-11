@@ -27,6 +27,7 @@ import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import ReferralPage from "@/pages/ReferralPage";
 import EventChatPage from "@/pages/EventChatPage";
+import WalletPage from "@/pages/WalletPage";
 
 
 
