@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, Smile, Loader, X, Users, Clock } from 'lucide-react';
+import { ArrowLeft, Send, Smile, Loader, X, Users, Clock, Camera } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +9,13 @@ interface Event {
   id: string;
   title: string;
   creatorId: string;
+  creator?: {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    profileImageUrl?: string;
+  };
   participantCount: number;
   poolAmount: number;
   endTime: string;
@@ -47,8 +54,6 @@ interface EventChatProps {
   onBack: () => void;
 }
 
-const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&auto=format&fit=crop';
-
 export function EventChat({ eventId, onBack }: EventChatProps) {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -62,7 +67,6 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
   const [mentionResults, setMentionResults] = useState<Array<{id: string, username: string}>>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [bannerOpen, setBannerOpen] = useState(true);
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -70,14 +74,14 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
   const { data: event, isLoading: loadingEvent } = useQuery<Event>({
     queryKey: ['/api/events', eventId],
     enabled: !!eventId,
-    refetchInterval: 30000, // Refetch every 30 seconds to keep participant count accurate
+    refetchInterval: 30000,
   });
 
   // Fetch participant count
   const { data: participantData } = useQuery<{count: number, participants: any[]}>({
     queryKey: ['/api/events', eventId, 'participants'],
     enabled: !!eventId,
-    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
+    refetchInterval: 10000,
   });
 
   // Fetch messages
@@ -196,6 +200,21 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
     }
   };
 
+  // Handle prediction
+  const handlePrediction = async (selectedPrediction: boolean) => {
+    if (!user) return;
+
+    setIsProcessing(true);
+    try {
+      await joinEventMutation.mutateAsync({ prediction: selectedPrediction });
+      setPrediction(selectedPrediction);
+    } catch (error) {
+      console.error('Error handling prediction:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,21 +243,6 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
     }
   };
 
-  // Handle prediction
-  const handlePrediction = async (selectedPrediction: boolean) => {
-    if (!user) return;
-    
-    setIsProcessing(true);
-    try {
-      await joinEventMutation.mutateAsync({ prediction: selectedPrediction });
-      setPrediction(selectedPrediction);
-    } catch (error) {
-      console.error('Error handling prediction:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   // Update countdown
   useEffect(() => {
     if (!event?.endTime) return;
@@ -250,10 +254,11 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
       if (!isNaN(endTime.getTime())) {
         if (endTime > now) {
           const diff = endTime.getTime() - now.getTime();
-          const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
-          const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
-          const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
-          setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setCountdown(`${String(days).padStart(2, '0')}. ${String(hours).padStart(2, '0')}. ${String(minutes).padStart(2, '0')}. ${String(seconds).padStart(2, '0')}.`);
         } else {
           setCountdown('Event ended');
         }
@@ -280,73 +285,78 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
     );
   }
 
+  const participantCount = participantData?.count || event.participantCount || 0;
+
   return (
-    <div className="flex flex-col h-screen bg-white">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0">
-        {/* Top Bar */}
-        <div className="bg-gray-50 border-b border-gray-200 p-3 flex items-center shadow-sm">
-          <button onClick={onBack} className="mr-4 text-gray-600 hover:text-purple-700">
-            <ArrowLeft size={20} />
-          </button>
-          <div className="flex items-center flex-1 min-w-0 gap-3">
-            <div className="overflow-hidden rounded-full h-8 w-8 border border-gray-300 flex-shrink-0">
+    <div className="flex flex-col h-screen bg-gray-100">
+      {/* Purple Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="text-white">
+              <ArrowLeft size={20} />
+            </button>
+            <div className="flex items-center gap-2">
               <img
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${event.creatorId}`}
+                src={event.creator?.profileImageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${event.creatorId}`}
                 alt="Creator"
-                className="w-full h-full object-cover"
+                className="w-8 h-8 rounded-full"
               />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 truncate text-sm">{event.title}</h3>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div>
                 <div className="flex items-center gap-1">
-                  <Users size={12} />
-                  <span>{participantData?.count || event.participantCount || 0}</span>
+                  <span className="font-semibold text-sm">@{event.creator?.username || 'bingogees'}</span>
+                  <span className="text-yellow-400">⭐</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Clock size={12} />
-                  <span>{countdown}</span>
-                </div>
+                <span className="text-xs text-purple-200">{participantCount.toLocaleString()} Members</span>
               </div>
             </div>
+          </div>
+          <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
+            <span className="text-sm font-semibold">₦ {formatCurrency(participantCount * 100, '', false)}</span>
           </div>
         </div>
+      </div>
 
-        {/* Prediction Banner */}
-        {bannerOpen && prediction === null && (
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 relative">
-            <button
-              onClick={() => setBannerOpen(false)}
-              className="absolute top-2 right-2 text-white/80 hover:text-white"
-            >
-              <X size={16} />
-            </button>
-            <div className="text-center">
-              <h4 className="font-semibold mb-2">Make Your Prediction</h4>
-              <p className="text-sm text-white/90 mb-4">
-                Pool: {formatCurrency(event.poolAmount || 0)}
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={() => handlePrediction(true)}
-                  disabled={isProcessing}
-                  className="bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 disabled:opacity-50"
-                >
-                  {isProcessing ? 'Processing...' : 'Yes'}
-                </button>
-                <button
-                  onClick={() => handlePrediction(false)}
-                  disabled={isProcessing}
-                  className="bg-red-500 text-white px-6 py-2 rounded-full font-medium hover:bg-red-600 disabled:opacity-50"
-                >
-                  {isProcessing ? 'Processing...' : 'No'}
-                </button>
+      {/* Prediction Banner */}
+      {prediction === null && (
+        <div className="bg-black text-white p-4 relative">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img
+                src={event.imageUrl || 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=400&h=200&fit=crop'}
+                alt="Event"
+                className="w-16 h-16 rounded-lg object-cover"
+              />
+              <div>
+                <h3 className="font-semibold text-sm">{event.title}</h3>
+                <div className="flex items-center gap-4 mt-2">
+                  <button
+                    onClick={() => handlePrediction(true)}
+                    disabled={isProcessing}
+                    className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    YES
+                    <span className="bg-white bg-opacity-20 px-1 rounded text-xs">58%</span>
+                  </button>
+                  <button
+                    onClick={() => handlePrediction(false)}
+                    disabled={isProcessing}
+                    className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-red-600 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    NO
+                    <span className="bg-white bg-opacity-20 px-1 rounded text-xs">42%</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
+          <div className="flex items-center gap-2 mt-3 text-sm text-gray-300">
+            <span>Event Pool ₦ {formatCurrency(event.poolAmount || 2500, '', false)}</span>
+            <span>⏱</span>
+            <span>{countdown}</span>
+          </div>
+        </div>
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -359,59 +369,66 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
             <p className="text-gray-500">No messages yet. Start the conversation!</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div key={msg.id} className="flex gap-3">
-              <div className="flex-shrink-0">
-                <img
-                  src={msg.sender?.profileImageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.senderId}`}
-                  alt={msg.sender?.firstName || 'User'}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <button
-                    onClick={() => setSelectedProfileUserId(msg.senderId)}
-                    className="font-medium text-gray-900 text-sm hover:text-purple-600 cursor-pointer"
-                  >
-                    {msg.sender?.firstName} {msg.sender?.lastName}
-                  </button>
-                  <span className="text-xs text-gray-500">
-                    {new Date(msg.createdAt).toLocaleTimeString()}
-                  </span>
-                </div>
-                {msg.replyTo && (
-                  <div className="bg-gray-100 border-l-4 border-purple-500 p-2 mb-2 rounded text-sm">
-                    <div className="text-gray-600">
-                      Replying to <span className="font-medium">{msg.replyTo.senderUsername}</span>
-                    </div>
-                    <div className="text-gray-700 truncate">{msg.replyTo.content}</div>
-                  </div>
-                )}
-                <div className="bg-gray-100 rounded-lg p-3 text-sm text-gray-900">
-                  {msg.mediaType === 'gif' && msg.mediaUrl ? (
-                    <img src={msg.mediaUrl} alt="GIF" className="rounded max-w-xs" />
-                  ) : (
-                    <p>{msg.content}</p>
+          messages.map((msg, index) => {
+            const isCurrentUser = msg.senderId === user?.id;
+            const showAvatar = index === 0 || messages[index - 1]?.senderId !== msg.senderId;
+
+            return (
+              <div key={msg.id} className="flex gap-3">
+                <div className="flex-shrink-0 w-8">
+                  {showAvatar && (
+                    <img
+                      src={msg.sender?.profileImageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.senderId}`}
+                      alt={msg.sender?.firstName || 'User'}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
                   )}
                 </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <button
-                    onClick={() => handleReply(msg)}
-                    className="text-xs text-gray-500 hover:text-purple-600"
-                  >
-                    Reply
-                  </button>
+                <div className="flex-1 max-w-xs">
+                  {showAvatar && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <button
+                        onClick={() => setSelectedProfileUserId(msg.senderId)}
+                        className="font-semibold text-gray-900 text-sm hover:text-purple-600 cursor-pointer"
+                      >
+                        {msg.sender?.username || msg.sender?.firstName || 'User'}
+                      </button>
+                      {msg.senderId === event.creatorId && (
+                        <span className="text-purple-600">⭐</span>
+                      )}
+                    </div>
+                  )}
+                  <div className={`inline-block p-3 rounded-2xl text-sm ${
+                    isCurrentUser 
+                      ? 'bg-purple-600 text-white rounded-br-md' 
+                      : 'bg-yellow-100 text-gray-900 rounded-bl-md'
+                  }`}>
+                    <p>{msg.content}</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500">
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {/* Reactions */}
+                    <div className="flex items-center gap-1">
+                      <button className="text-xs bg-gray-200 rounded-full px-2 py-1 flex items-center gap-1">
+                        😊 12
+                      </button>
+                      <button className="text-xs bg-gray-200 rounded-full px-2 py-1 flex items-center gap-1">
+                        🔥 12
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
-      <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+      <div className="bg-white p-4 border-t border-gray-200">
         {replyingTo && (
           <div className="bg-gray-100 border-l-4 border-purple-500 p-2 mb-2 rounded text-sm">
             <div className="flex items-center justify-between">
@@ -429,7 +446,6 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
             <div className="text-gray-700 truncate">{replyingTo.content}</div>
           </div>
         )}
-        
         {showMentionDropdown && (
           <div className="absolute bottom-20 left-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg max-h-32 overflow-y-auto">
             {mentionResults.map((user) => (
@@ -443,29 +459,34 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
             ))}
           </div>
         )}
-
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="text-purple-600 p-2"
+          >
+            <Smile size={24} />
+          </button>
           <div className="flex-1 relative">
             <input
               type="text"
               value={message}
               onChange={handleMessageChange}
-              placeholder="Type a message..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Start a message"
+              className="w-full px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-700"
               disabled={sendMessageMutation.isPending}
             />
           </div>
           <button
             type="button"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-2 text-gray-500 hover:text-purple-600"
+            className="text-purple-600 p-2"
           >
-            <Smile size={20} />
+            <Camera size={24} />
           </button>
           <button
             type="submit"
             disabled={!message.trim() || sendMessageMutation.isPending}
-            className="bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 disabled:opacity-50"
+            className="bg-purple-600 text-white p-3 rounded-full hover:bg-purple-700 disabled:opacity-50"
           >
             {sendMessageMutation.isPending ? <Loader className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
