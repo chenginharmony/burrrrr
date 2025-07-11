@@ -8,7 +8,6 @@ export interface Event {
   id: string;
   title: string;
   description: string;
-  category: string;
   bannerUrl: string;
   startTime: string;
   endTime: string;
@@ -19,6 +18,7 @@ export interface Event {
   status: string;
   type: string;
   creatorId: string;
+  creatorUsername?: string;
   createdAt: string;
   updatedAt: string;
 }

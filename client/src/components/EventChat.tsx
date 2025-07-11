@@ -70,6 +70,14 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
   const { data: event, isLoading: loadingEvent } = useQuery<Event>({
     queryKey: ['/api/events', eventId],
     enabled: !!eventId,
+    refetchInterval: 30000, // Refetch every 30 seconds to keep participant count accurate
+  });
+
+  // Fetch participant count
+  const { data: participantData } = useQuery<{count: number, participants: any[]}>({
+    queryKey: ['/api/events', eventId, 'participants'],
+    enabled: !!eventId,
+    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
   });
 
   // Fetch messages
@@ -294,7 +302,7 @@ export function EventChat({ eventId, onBack }: EventChatProps) {
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <div className="flex items-center gap-1">
                   <Users size={12} />
-                  <span>{event.participantCount || 0}</span>
+                  <span>{participantData?.count || event.participantCount || 0}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock size={12} />

@@ -86,8 +86,8 @@ export function EventCard({ event, onJoin, isJoining }: EventCardProps) {
   }, [event]);
 
   return (
-    <div className="bg-black rounded-3xl overflow-hidden relative">
-      <div className="relative w-full aspect-video">
+    <div className="bg-black rounded-2xl overflow-hidden relative">
+      <div className="relative w-full aspect-[4/3]">
         <img
           src={event.imageUrl || DEFAULT_BANNER}
           alt={event.title}
@@ -98,24 +98,24 @@ export function EventCard({ event, onJoin, isJoining }: EventCardProps) {
         />
 
         {/* Header with creator info, title, and status */}
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent pt-2 pb-1.5">
-          <div className="px-3 grid grid-cols-[auto_1fr_auto] items-center w-full gap-2">
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent pt-1.5 pb-1">
+          <div className="px-2.5 grid grid-cols-[auto_1fr_auto] items-center w-full gap-2">
             {/* Creator info - Left side */}
             <div className="flex items-center flex-shrink-0">
-              <div className="overflow-hidden rounded-full h-5 w-5 border border-white/50 flex-shrink-0">
+              <div className="overflow-hidden rounded-full h-4 w-4 border border-white/50 flex-shrink-0">
                 <img
                   src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${event.creatorId || 'creator'}`}
                   alt="Creator"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="text-white/90 text-xs ml-1.5">
-                {event.creatorId?.slice(0, 8) || "creator"}
+              <span className="text-white/90 text-xs ml-1">
+                {event.creatorUsername || `user_${event.creatorId?.slice(0, 6)}` || "creator"}
               </span>
             </div>
 
             {/* Centered title */}
-            <h2 className="text-white text-lg font-bold leading-tight text-center mx-auto truncate px-2">
+            <h2 className="text-white text-base font-bold leading-tight text-center mx-auto truncate px-2">
               {event.title}
             </h2>
 
@@ -133,20 +133,20 @@ export function EventCard({ event, onJoin, isJoining }: EventCardProps) {
       </div>
 
       {/* Bottom section with event pool and join button */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+      <div className="absolute bottom-0 left-0 right-0 p-3 flex items-end justify-between">
         {/* Event Pool section */}
         <div className="flex flex-col justify-end">
-          <span className="text-white text-sm font-bold">Event Pool</span>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="bg-white rounded-lg px-2 py-1">
-              <span className="text-black font-bold text-sm">
+          <span className="text-white text-xs font-bold">Event Pool</span>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="bg-white rounded-md px-1.5 py-0.5">
+              <span className="text-black font-bold text-xs">
                 {formatCurrency(poolAmount, '₦', true)}
               </span>
             </div>
             {/* Participation Avatar + Count */}
-            <div className="flex items-center ml-[1rem]">
+            <div className="flex items-center ml-2">
               <div className="relative">
-                <div className="overflow-hidden rounded-full h-5 w-5 border-2 border-white-200 flex items-center justify-center">
+                <div className="overflow-hidden rounded-full h-4 w-4 border border-white-200 flex items-center justify-center">
                   <img
                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${event.id}`}
                     alt="Participant"
@@ -154,7 +154,7 @@ export function EventCard({ event, onJoin, isJoining }: EventCardProps) {
                   />
                 </div>
               </div>
-              <div className="bg-white rounded-full min-w-[1.5rem] h-5 flex items-center justify-center text-black font-bold text-xs ml-[-0.2rem] pl-1 pr-1">
+              <div className="bg-white rounded-full min-w-[1.25rem] h-4 flex items-center justify-center text-black font-bold text-xs ml-[-0.15rem] px-1">
                 {currentParticipants}
               </div>
             </div>
@@ -172,9 +172,9 @@ export function EventCard({ event, onJoin, isJoining }: EventCardProps) {
               : isJoining
                 ? 'bg-gray-400 text-white'
                 : 'bg-[#CCFF00] text-black hover:bg-[#b8e600]'
-          } h-10 flex items-center justify-center gap-1 px-4 rounded-3xl font-medium transition-colors`}
+          } h-8 flex items-center justify-center gap-1 px-3 rounded-2xl font-medium text-sm transition-colors`}
         >
-          {event.isPrivate && <Lock className="h-4 w-4" />}
+          {event.isPrivate && <Lock className="h-3 w-3" />}
           {isEventEnded
             ? 'Closed'
             : isJoining

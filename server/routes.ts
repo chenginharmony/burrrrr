@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema, users } from "@shared/schema";
+import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema, users, eventParticipants, events } from "@shared/schema";
 import { z } from "zod";
 import passport from "passport";
 import { db } from "./db";
@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes are handled by setupAuth()
-  
+
   // Add error handling for OAuth failures
   app.get('/api/callback', (req, res, next) => {
     // Check for OAuth error parameters
@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const targetUserId = req.params.id;
-      
+
       if (userId === targetUserId) {
         return res.status(400).json({ message: "Cannot follow yourself" });
       }
@@ -77,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const targetUserId = req.params.id;
-      
+
       await storage.unfollowUser(userId, targetUserId);
       res.json({ message: "Successfully unfollowed user" });
     } catch (error) {
@@ -92,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!query || query.length < 2) {
         return res.json([]);
       }
-      
+
       // Search users by username or firstName
       const users = await db
         .select({
@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           )
         )
         .limit(10);
-      
+
       res.json(users);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -122,11 +122,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { recipientId, amount } = req.body;
-      
+
       if (!recipientId || !amount || amount <= 0) {
         return res.status(400).json({ message: "Invalid tip data" });
       }
-      
+
       if (userId === recipientId) {
         return res.status(400).json({ message: "Cannot tip yourself" });
       }
@@ -171,16 +171,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/events/:id', async (req, res) => {
+  // Get single event
+  app.get('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const event = await storage.getEvent(req.params.id);
-      if (!event) {
-        return res.status(404).json({ message: "Event not found" });
+      const event = await db.select().from(events).where(eq(events.id, req.params.id)).limit(1);
+      if (event.length === 0) {
+        return res.status(404).json({ message: 'Event not found' });
       }
-      res.json(event);
+
+      // Get creator info
+      const creator = await db.select().from(users).where(eq(users.id, event[0].creatorId)).limit(1);
+      const creatorUsername = creator.length > 0 ? creator[0].username || creator[0].firstName : null;
+
+      // Get participant count
+      const participantCount = await db.select({ count: sql<number>`count(*)` })
+        .from(eventParticipants)
+        .where(eq(eventParticipants.eventId, req.params.id));
+
+      const eventWithDetails = {
+        ...event[0],
+        creatorUsername,
+        participantCount: participantCount[0]?.count || 0
+      };
+
+      res.json(eventWithDetails);
     } catch (error) {
-      console.error("Error fetching event:", error);
-      res.status(500).json({ message: "Failed to fetch event" });
+      console.error('Error fetching event:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get event participants
+  app.get('/api/events/:id/participants', isAuthenticated, async (req: any, res) => {
+    try {
+      const participants = await db.select({
+        userId: eventParticipants.userId,
+        joinedAt: eventParticipants.joinedAt,
+        prediction: eventParticipants.prediction,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName
+      })
+      .from(eventParticipants)
+      .leftJoin(users, eq(eventParticipants.userId, users.id))
+      .where(eq(eventParticipants.eventId, req.params.id));
+
+      res.json({
+        count: participants.length,
+        participants
+      });
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -411,21 +453,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const currentUserId = req.user.claims.sub;
       const searchQuery = req.query.q as string;
-      
+
       if (!searchQuery || searchQuery.length < 2) {
         return res.json([]);
       }
-      
+
       // Get all users for search (excluding current user)
       const users = await storage.getUserFriends(currentUserId);
-      
+
       // Filter users based on search query
       const filteredUsers = users.filter(user => 
         user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.username?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      
+
       res.json(filteredUsers);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -523,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { referralCode } = req.body;
       const success = await storage.applyReferralCode(referralCode, userId);
-      
+
       if (success) {
         res.json({ message: "Referral code applied successfully" });
       } else {
