@@ -57,7 +57,7 @@ export function WalletSystem() {
         return;
       }
 
-      // Initialize Paystack payment modal (inline)
+      // Initialize Paystack payment modal (inline, same page)
       try {
         const handler = window.PaystackPop.setup({
           key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_77336172671b6e12b2b92f59a0a2035f7f20c54c',
@@ -65,10 +65,22 @@ export function WalletSystem() {
           amount: parseFloat(depositAmount) * 100, // Convert to kobo
           currency: 'NGN',
           ref: response.reference,
-          embed: false, // Ensure it's not embedded, but modal
+          embed: false, // Modal popup, not embedded
           onSuccess: function(transaction: any) {
-            // Verify payment on backend
+            // Verify payment on backend and update balance immediately
             verifyPayment.mutate(transaction.reference);
+            
+            // Immediately show optimistic update
+            const amount = parseFloat(depositAmount);
+            queryClient.setQueryData(['/api/auth/user'], (oldData: any) => {
+              if (oldData) {
+                return {
+                  ...oldData,
+                  availablePoints: (parseFloat(oldData.availablePoints || '0') + amount).toString()
+                };
+              }
+              return oldData;
+            });
           },
           onCancel: function() {
             toast({
@@ -78,11 +90,11 @@ export function WalletSystem() {
             });
           },
           onClose: function() {
-            // Optional: handle when modal is closed without action
+            // Modal closed - no action needed
           }
         });
         
-        // Use openIframe for inline modal (not new window)
+        // Open inline (same page) - not in new tab
         handler.openIframe();
       } catch (error) {
         console.error('Paystack setup error:', error);
@@ -342,6 +354,8 @@ export function WalletSystem() {
               <p className="text-xs text-gray-500 text-center">
                 Secure payment powered by Paystack
               </p>
+              {/* Paystack inline container */}
+              <div id="paystack-container" className="min-h-[400px] w-full"></div>
             </div>
           ) : (
             <div className="space-y-4">

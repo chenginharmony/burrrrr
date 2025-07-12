@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 
 interface AuthContextType {
@@ -11,6 +11,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData: any) => Promise<{ user: User | null; error: AuthError | null }>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<{ user: User | null; error: AuthError | null }>;
+  signOut: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,11 +61,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const login = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { user: data.user, error };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { user: null, error: error as AuthError };
+    }
+  };
+
+  const signUp = async (email: string, password: string, userData: any) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
+        }
+      });
+      return { user: data.user, error };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { user: null, error: error as AuthError };
+    }
+  };
+
+  const logout = async () => {
+    await signOut();
+  };
+
+  const updateUser = async (updates: Partial<User>) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser(updates);
+      return { user: data.user, error };
+    } catch (error) {
+      console.error('Update user error:', error);
+      return { user: null, error: error as AuthError };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
     isAuthenticated: !!session,
     isLoading,
+    login,
+    signUp,
+    logout,
+    updateUser,
     signOut,
   };
 
