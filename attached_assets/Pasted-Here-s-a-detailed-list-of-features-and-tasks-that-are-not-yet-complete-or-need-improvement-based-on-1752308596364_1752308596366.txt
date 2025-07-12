@@ -1,0 +1,51 @@
+Here’s a detailed list of features and tasks that are not yet complete or need improvement, based on your project context and recent issues:
+
+Authentication & Session
+<input disabled="" type="checkbox"> Fix backend Supabase JWT authentication middleware (currently rejects valid tokens).
+<input disabled="" type="checkbox"> Ensure seamless login/logout flow across frontend and backend.
+<input disabled="" type="checkbox"> Implement user session refresh/auto-login on page reload.
+<input disabled="" type="checkbox"> Add user registration (if not present).
+Wallet & Payments
+<input disabled="" type="checkbox"> Make wallet deposit and withdraw fully functional (backend must accept Supabase token).
+<input disabled="" type="checkbox"> Complete Paystack payment verification and success/failure handling.
+<input disabled="" type="checkbox"> Add real bank details input for withdrawals (currently hardcoded).
+<input disabled="" type="checkbox"> Show deposit/withdrawal status and error feedback in UI.
+<input disabled="" type="checkbox"> Display transaction history with pagination and filtering.
+<input disabled="" type="checkbox"> Add wallet balance auto-refresh after deposit/withdraw.
+Profile & User Settings
+<input disabled="" type="checkbox"> Implement full profile page (edit profile, avatar upload, etc.).
+<input disabled="" type="checkbox"> Add settings page (change password, notification preferences).
+<input disabled="" type="checkbox"> Add help/support/contact page.
+Events & Challenges
+<input disabled="" type="checkbox"> Add event creation and management (admin or user).
+<input disabled="" type="checkbox"> Implement challenge creation, acceptance, and resolution flows.
+<input disabled="" type="checkbox"> Add challenge evidence upload and review.
+<input disabled="" type="checkbox"> Show challenge status and history.
+Notifications
+<input disabled="" type="checkbox"> Ensure real-time notifications work for all event types.
+<input disabled="" type="checkbox"> Add notification settings and mark-as-read functionality.
+<input disabled="" type="checkbox"> Fix notification UI for mobile and desktop.
+History & Activity
+<input disabled="" type="checkbox"> Complete modern History page (all user activities, filter by type).
+<input disabled="" type="checkbox"> Add export/download history feature.
+UI/UX Improvements
+<input disabled="" type="checkbox"> Fix header flicker and ensure correct profile/sign-in display.
+<input disabled="" type="checkbox"> Add profile dropdown menu with logout/settings/help.
+<input disabled="" type="checkbox"> Improve mobile navigation and responsiveness.
+<input disabled="" type="checkbox"> Add loading spinners and error states to all pages.
+<input disabled="" type="checkbox"> Polish card layouts, gradients, and typography.
+Security & Validation
+<input disabled="" type="checkbox"> Validate all user inputs (amounts, bank details, profile fields).
+<input disabled="" type="checkbox"> Add backend rate limiting and anti-abuse checks.
+<input disabled="" type="checkbox"> Ensure secure handling of tokens and sensitive data.
+Admin & Analytics
+<input disabled="" type="checkbox"> Build admin dashboard for user/event/challenge management.
+<input disabled="" type="checkbox"> Add analytics for platform usage, transactions, and events.
+Referral System
+<input disabled="" type="checkbox"> Implement referral codes and commission tracking.
+<input disabled="" type="checkbox"> Add social sharing tools for referrals.
+Testing & Deployment
+<input disabled="" type="checkbox"> Write unit and integration tests for backend and frontend.
+<input disabled="" type="checkbox"> Set up CI/CD for automated deployment.
+<input disabled="" type="checkbox"> Add error logging and monitoring.
+Let me know which area you want to prioritize or if you want a breakdown of any specific feature!
