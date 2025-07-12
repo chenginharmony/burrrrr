@@ -1242,11 +1242,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (response.status && response.data.status === 'success') {
         const amount = response.data.amount / 100; // Convert from kobo
 
+        // Get current user to calculate new balance
+        const currentUser = await storage.getUser(userId);
+        const currentBalance = parseFloat(currentUser?.availablePoints || '0');
+        const newBalance = currentBalance + amount;
+
         // Update user balance
         await db
           .update(users)
           .set({
-            availablePoints: sql`${users.availablePoints} + ${amount}`,
+            availablePoints: newBalance.toString(),
+            totalPoints: sql`${users.totalPoints} + ${amount}`,
             updatedAt: new Date(),
           })
           .where(eq(users.id, userId));
@@ -1283,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ 
           message: "Payment verified and balance updated",
           amount,
-          newBalance: (parseFloat(user?.availablePoints || '0') + amount).toString()
+          newBalance: newBalance.toString()
         });
       } else {
         res.status(400).json({ message: "Payment verification failed" });

@@ -73,7 +73,7 @@ export default function WalletPage() {
     },
     onSuccess: (data) => {
       const amount = parseFloat(depositAmount);
-      toast.showError(`✅ ₦${amount.toLocaleString()} deposited successfully! Ready for betting.`);
+      toast.showSuccess(`✅ ₦${amount.toLocaleString()} deposited successfully! Ready for betting.`);
       setDepositAmount('');
       setIsDepositDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
@@ -92,7 +92,7 @@ export default function WalletPage() {
     },
     onSuccess: (data) => {
       const amount = parseFloat(withdrawAmount);
-      toast.showError(`💰 ₦${amount.toLocaleString()} withdrawal requested successfully! Processing may take 1-3 business days.`);
+      toast.showSuccess(`💰 ₦${amount.toLocaleString()} withdrawal requested successfully! Processing may take 1-3 business days.`);
       setWithdrawAmount('');
       setIsWithdrawDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
