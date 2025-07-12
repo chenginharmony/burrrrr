@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../supabaseClient";
 import { useToast } from "../hooks/use-toast";
 import { Button } from "../components/ui/button";
@@ -8,13 +8,14 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { ArrowLeft, Save, Upload } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { apiRequest } from "../lib/queryClient";
+import { useLocation } from "wouter";
+import { apiRequest, queryClient } from "../lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
 
 export default function ProfileSettings() {
-  const { currentUser, setCurrentUser } = useAuth();
-  const { showSuccess, showError } = useToast();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -25,16 +26,16 @@ export default function ProfileSettings() {
   });
 
   useEffect(() => {
-    if (currentUser) {
+    if (user) {
       setProfileData({
-        firstName: currentUser.firstName || '',
-        lastName: currentUser.lastName || '',
-        username: currentUser.username || '',
-        email: currentUser.email || '',
-        profileImageUrl: currentUser.profileImageUrl || ''
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        username: user.username || '',
+        email: user.email || '',
+        profileImageUrl: user.profileImageUrl || ''
       });
     }
-  }, [currentUser]);
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setProfileData(prev => ({
@@ -43,48 +44,39 @@ export default function ProfileSettings() {
     }));
   };
 
-  const handleSaveProfile = async () => {
-    if (!currentUser) return;
-    
-    setLoading(true);
-    try {
-      // Update Supabase auth metadata
-      const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          firstName: profileData.firstName,
-          lastName: profileData.lastName,
-          username: profileData.username,
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: typeof profileData) => {
+      const response = await apiRequest(`/api/users/${user?.id}`, {
+        method: 'PUT',
+        body: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          username: data.username,
+          profileImageUrl: data.profileImageUrl
         }
       });
-
-      if (authError) throw authError;
-
-      // Update database user record
-      await apiRequest('PUT', `/api/users/${currentUser.id}`, {
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        username: profileData.username,
-        email: profileData.email,
-        profileImageUrl: profileData.profileImageUrl
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!",
       });
-
-      // Update local user state
-      setCurrentUser({
-        ...currentUser,
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        username: profileData.username,
-        email: profileData.email,
-        profileImageUrl: profileData.profileImageUrl
+      // Refresh user data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
       });
+    },
+  });
 
-      showSuccess("Profile updated successfully!");
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      showError("Failed to update profile");
-    } finally {
-      setLoading(false);
-    }
+  const handleSaveProfile = () => {
+    if (!user) return;
+    updateProfileMutation.mutate(profileData);
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +86,7 @@ export default function ProfileSettings() {
     setLoading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${currentUser?.id}-${Math.random()}.${fileExt}`;
+      const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -109,10 +101,17 @@ export default function ProfileSettings() {
         profileImageUrl: data.publicUrl
       }));
 
-      showSuccess("Profile image uploaded successfully!");
+      toast({
+        title: "Success",
+        description: "Profile image uploaded successfully!",
+      });
     } catch (error) {
       console.error('Error uploading image:', error);
-      showError("Failed to upload image");
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -126,7 +125,7 @@ export default function ProfileSettings() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => setLocation('/settings')}
             className="p-2"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -218,11 +217,11 @@ export default function ProfileSettings() {
             <div className="flex justify-end">
               <Button
                 onClick={handleSaveProfile}
-                disabled={loading}
+                disabled={updateProfileMutation.isPending || loading}
                 className="bg-gradient-to-r from-purple-600 to-lime-500 hover:from-purple-700 hover:to-lime-600"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {loading ? 'Saving...' : 'Save Changes'}
+                {updateProfileMutation.isPending || loading ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </CardContent>

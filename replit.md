@@ -10,9 +10,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **Profile Page Redesign (July 2025)**: Complete redesign with menu-based navigation including personal info, account settings, and support sections
-- **Referral System Implementation (July 2025)**: Added comprehensive referral system with database schema, backend API, and frontend UI
-- **Event Creation Fix (July 2025)**: Improved error handling for event creation to prevent undefined event errors
+- **Authentication & Profile System Fix (July 2025)**: Fixed authentication middleware on all protected endpoints, implemented complete profile editing system with PUT /api/users/:id endpoint
+- **Event Betting System Enhancement (July 2025)**: Added authentication to event join endpoint, fixed wallet balance validation, enhanced event matching system
+- **Profile Settings Implementation (July 2025)**: Created fully functional profile settings page with form handling, image upload, and database persistence
+- **API Request System Overhaul (July 2025)**: Updated all API requests to include proper authentication headers for GET and POST requests
 
 ## System Architecture
 

@@ -62,7 +62,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users/:id/follow', async (req: any, res) => {
+  // Update user profile
+  app.put('/api/users/:id', supabaseIsAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || req.user?.claims?.sub;
+      const targetUserId = req.params.id;
+
+      // Users can only update their own profile
+      if (userId !== targetUserId) {
+        return res.status(403).json({ message: "Unauthorized to update this profile" });
+      }
+
+      const { firstName, lastName, username, profileImageUrl } = req.body;
+      
+      // Update user in database
+      const updatedUser = await storage.updateUser(userId, {
+        firstName,
+        lastName,
+        username,
+        profileImageUrl,
+        updatedAt: new Date(),
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  app.post('/api/users/:id/follow', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const targetUserId = req.params.id;
@@ -1244,7 +1273,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user?.id || req.user?.claims?.sub;
       const { reference } = req.body;
 
+      console.log('Payment verification request:', { userId, reference, userObj: req.user });
+
       if (!userId) {
+        console.log('User not authenticated in verify-payment');
         return res.status(401).json({ message: "User not authenticated" });
       }
 
@@ -1312,11 +1344,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
           newBalance: newBalance.toString()
         });
       } else {
+        console.log('Paystack verification failed:', response);
         res.status(400).json({ message: "Payment verification failed" });
       }
     } catch (error) {
       console.error("Error verifying payment:", error);
       res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  // Paystack webhook for automatic payment verification (backup method)
+  app.post('/api/wallet/webhook', async (req: any, res) => {
+    try {
+      const signature = req.headers['x-paystack-signature'];
+      const payload = JSON.stringify(req.body);
+      
+      // Verify webhook signature
+      if (!paystackService.verifyWebhookSignature(payload, signature)) {
+        return res.status(401).json({ message: 'Invalid signature' });
+      }
+
+      const event = req.body;
+      console.log('Paystack webhook received:', event.event, event.data?.reference);
+
+      if (event.event === 'charge.success') {
+        const { reference, amount, customer } = event.data;
+        const amountInNaira = amount / 100;
+
+        // Find user by email
+        const [user] = await db.select()
+          .from(users)
+          .where(eq(users.email, customer.email))
+          .limit(1);
+
+        if (user) {
+          // Check if transaction already exists
+          const existingTransaction = await db.select()
+            .from(transactions)
+            .where(eq(transactions.referenceId, reference))
+            .limit(1);
+
+          if (existingTransaction.length === 0) {
+            // Update user balance
+            const currentBalance = parseFloat(user.availablePoints || '0');
+            const newBalance = currentBalance + amountInNaira;
+
+            await db
+              .update(users)
+              .set({
+                availablePoints: newBalance.toString(),
+                totalPoints: sql`${users.totalPoints} + ${amountInNaira}`,
+                updatedAt: new Date(),
+              })
+              .where(eq(users.id, user.id));
+
+            // Create transaction record
+            await storage.createTransaction({
+              userId: user.id,
+              type: 'deposit',
+              amount: amountInNaira.toString(),
+              description: `Wallet deposit via Paystack webhook`,
+              status: 'completed',
+              referenceId: reference,
+              metadata: event.data
+            });
+
+            console.log(`Webhook: Updated balance for user ${user.id}: +${amountInNaira}`);
+          }
+        }
+      }
+
+      res.status(200).json({ message: 'Webhook processed' });
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(500).json({ message: 'Webhook processing failed' });
     }
   });
 
