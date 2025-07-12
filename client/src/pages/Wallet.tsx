@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useToast } from '@/contexts/ToastContext';
+import { apiRequest } from '@/lib/queryClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,8 +24,72 @@ export default function WalletPage() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const toast = useToast();
 
-  const totalBalance = parseFloat(user?.availablePoints || '0');
+  // Deposit mutation
+  const depositMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      const res = await apiRequest('POST', '/api/wallet/deposit', { amount });
+      const data = await res.json();
+      return data;
+    },
+    onSuccess: async (data) => {
+      // Open Paystack payment page
+      if (data.authorization_url) {
+        window.open(data.authorization_url, '_blank');
+      }
+    },
+    onError: (error: any) => {
+      if (typeof error?.message === 'string') {
+        toast.showError(error.message);
+      } else {
+        toast.showError('Failed to initialize deposit');
+      }
+    },
+  });
+
+  // Withdraw mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async (payload: { amount: number; accountNumber: string; bankCode: string; accountName: string }) => {
+      const res = await apiRequest('POST', '/api/wallet/withdraw', payload);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast.showError('Withdrawal request submitted.');
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+    },
+    onError: (error: any) => {
+      if (typeof error?.message === 'string') {
+        toast.showError(error.message);
+      } else {
+        toast.showError('Failed to process withdrawal');
+      }
+    },
+  });
+
+  // Deposit handler
+  const handleDeposit = () => {
+    const amount = parseFloat(depositAmount);
+    if (isNaN(amount) || amount < 100) {
+      toast.showError('Minimum deposit is ₦100');
+      return;
+    }
+    depositMutation.mutate(amount);
+  };
+
+  // Withdraw handler (for demo, just amount; you may want to collect bank details)
+  const handleWithdraw = () => {
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount < 500) {
+      toast.showError('Minimum withdrawal is ₦500');
+      return;
+    }
+    // TODO: Replace with real bank details input
+    withdrawMutation.mutate({ amount, accountNumber: '1234567890', bankCode: '058', accountName: user?.username || 'User' });
+  };
+
+  const totalBalance = parseFloat((user?.availablePoints ?? '0').toString());
   const totalDeposits = transactions
     .filter(t => t.type === 'deposit')
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
@@ -93,8 +159,8 @@ export default function WalletPage() {
                           value={depositAmount}
                           onChange={(e) => setDepositAmount(e.target.value)}
                         />
-                        <Button className="w-full">
-                          Deposit ₦{depositAmount || '0'}
+                        <Button className="w-full" onClick={handleDeposit} disabled={depositMutation.isPending}>
+                          {depositMutation.isPending ? 'Processing...' : `Deposit ₦${depositAmount || '0'}`}
                         </Button>
                       </div>
                     </DialogContent>
@@ -117,8 +183,8 @@ export default function WalletPage() {
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
                         />
-                        <Button className="w-full">
-                          Withdraw ₦{withdrawAmount || '0'}
+                        <Button className="w-full" onClick={handleWithdraw} disabled={withdrawMutation.isPending}>
+                          {withdrawMutation.isPending ? 'Processing...' : `Withdraw ₦${withdrawAmount || '0'}`}
                         </Button>
                       </div>
                     </DialogContent>
@@ -263,7 +329,7 @@ export default function WalletPage() {
                   ₦10,000
                 </Button>
               </div>
-              <Button className="w-full">
+              <Button className="w-full" onClick={handleDeposit}>
                 <CreditCard className="h-4 w-4 mr-2" />
                 Deposit ₦{depositAmount || '0'}
               </Button>
@@ -300,7 +366,7 @@ export default function WalletPage() {
                   Withdrawal limit: ₦{totalBalance.toLocaleString()} (Available balance)
                 </p>
               </div>
-              <Button className="w-full">
+              <Button className="w-full" onClick={handleWithdraw}>
                 Withdraw ₦{withdrawAmount || '0'}
               </Button>
             </div>

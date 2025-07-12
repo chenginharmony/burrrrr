@@ -12,9 +12,24 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Get Supabase access token if available
+  let accessToken = '';
+  try {
+    const { supabase } = await import('../supabaseClient');
+    const session = await supabase.auth.getSession();
+    accessToken = session?.data?.session?.access_token || '';
+  } catch (e) {
+    // fallback: no token
+  }
+
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

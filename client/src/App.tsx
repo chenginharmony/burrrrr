@@ -14,8 +14,44 @@ import { MatchNotification } from "@/components/ui/match-notification";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { queryClient } from "@/lib/queryClient";
 import { useState } from "react";
+import SignInModal from "./components/SignInModal";
+import "./components/SignInModal.css";
 
 // Pages
+import ProfileSettings from "@/pages/ProfileSettings";
+import LevelsBadges from "@/pages/LevelsBadges";
+import Settings from "@/pages/Settings";
+import PrivacySecurity from "@/pages/PrivacySecurity";
+import TermsOfService from "@/pages/TermsOfService";
+import DataDeletionRequest from "@/pages/DataDeletionRequest";
+import HelpSupport from "@/pages/HelpSupport";
+
+// ...existing code...
+
+// Add these routes inside the <Switch> in both desktop and mobile layouts:
+// Desktop:
+// <Switch>
+//   ...existing routes...
+//   <Route path="/profile-settings" component={ProfileSettings} />
+//   <Route path="/levels-badges" component={LevelsBadges} />
+//   <Route path="/settings" component={Settings} />
+//   <Route path="/privacy-security" component={PrivacySecurity} />
+//   <Route path="/terms-of-service" component={TermsOfService} />
+//   <Route path="/data-deletion" component={DataDeletionRequest} />
+//   <Route path="/help-support" component={HelpSupport} />
+// </Switch>
+
+// Mobile:
+// <Switch>
+//   ...existing routes...
+//   <Route path="/profile-settings" component={ProfileSettings} />
+//   <Route path="/levels-badges" component={LevelsBadges} />
+//   <Route path="/settings" component={Settings} />
+//   <Route path="/privacy-security" component={PrivacySecurity} />
+//   <Route path="/terms-of-service" component={TermsOfService} />
+//   <Route path="/data-deletion" component={DataDeletionRequest} />
+//   <Route path="/help-support" component={HelpSupport} />
+// </Switch>
 import Home from "@/pages/Home";
 import Events from "@/pages/Events";
 import Challenges from "@/pages/Challenges";
@@ -28,6 +64,7 @@ import Profile from "@/pages/Profile";
 import ReferralPage from "@/pages/ReferralPage";
 import EventChatPage from "@/pages/EventChatPage";
 import WalletPage from "@/pages/WalletPage";
+import History from "@/pages/History";
 
 
 
@@ -41,6 +78,7 @@ function AppContent() {
     color: string;
   } | null>(null);
 
+  const [modalOpen, setModalOpen] = useState(false);
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -48,7 +86,6 @@ function AppContent() {
       </div>
     );
   }
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -60,11 +97,12 @@ function AppContent() {
             Please sign in to continue
           </p>
           <button
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => setModalOpen(true)}
             className="bg-gradient-to-r from-purple-600 to-lime-500 text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition"
           >
             Sign In
           </button>
+          <SignInModal open={modalOpen} onClose={() => setModalOpen(false)} />
         </div>
       </div>
     );
@@ -79,6 +117,7 @@ function AppContent() {
           <Switch>
             <Route path="/" component={() => <><Header title="Events" /><Events /></>} />
             <Route path="/home" component={() => <><Header title="Dashboard" showStreak /><Home /></>} />
+            <Route path="/history" component={History} />
             <Route path="/events/:eventId/chat" component={EventChatPage} />
             <Route path="/challenges" component={() => <><Header title="Challenges" /><Challenges /></>} />
             <Route path="/friends" component={() => <><Header title="Friends" /><Friends /></>} />
@@ -87,6 +126,13 @@ function AppContent() {
             <Route path="/notifications" component={() => <><Header title="Notifications" /><Notifications /></>} />
             <Route path="/profile" component={() => <><Header title="Profile" /><Profile /></>} />
             <Route path="/referral" component={() => <><Header title="Refer & Earn" /><ReferralPage /></>} />
+            <Route path="/profile-settings" component={ProfileSettings} />
+            <Route path="/levels-badges" component={LevelsBadges} />
+            <Route path="/settings" component={Settings} />
+            <Route path="/privacy-security" component={PrivacySecurity} />
+            <Route path="/terms-of-service" component={TermsOfService} />
+            <Route path="/data-deletion" component={DataDeletionRequest} />
+            <Route path="/help-support" component={HelpSupport} />
             <Route component={() => <><Header title="404" /><NotFound /></>} />
           </Switch>
         </div>
@@ -94,18 +140,25 @@ function AppContent() {
 
       {/* Mobile Layout */}
       <div className="lg:hidden flex flex-col h-full w-full">
-        <Header />
         <Switch>
-          <Route path="/" component={Events} />
-          <Route path="/home" component={Home} />
+          <Route path="/" component={() => <><Header title="Events" /><Events /></>} />
+          <Route path="/home" component={() => <><Header title="Dashboard" showStreak /><Home /></>} />
+          <Route path="/history" component={History} />
           <Route path="/events/:eventId/chat" component={EventChatPage} />
-          <Route path="/challenges" component={Challenges} />
-          <Route path="/friends" component={Friends} />
-          <Route path="/wallet" component={Wallet} />
-          <Route path="/leaderboard" component={Leaderboard} />
-          <Route path="/notifications" component={Notifications} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/referral" component={ReferralPage} />
+          <Route path="/challenges" component={() => <><Header title="Challenges" /><Challenges /></>} />
+          <Route path="/friends" component={() => <><Header title="Friends" /><Friends /></>} />
+          <Route path="/wallet" component={() => <><Header title="Wallet" /><Wallet /></>} />
+          <Route path="/leaderboard" component={() => <><Header title="Leaderboard" /><Leaderboard /></>} />
+          <Route path="/notifications" component={() => <><Header title="Notifications" /><Notifications /></>} />
+          <Route path="/profile" component={() => <><Header title="Profile" /><Profile /></>} />
+          <Route path="/referral" component={() => <><Header title="Refer & Earn" /><ReferralPage /></>} />
+          <Route path="/profile-settings" component={ProfileSettings} />
+          <Route path="/levels-badges" component={LevelsBadges} />
+          <Route path="/settings" component={Settings} />
+          <Route path="/privacy-security" component={PrivacySecurity} />
+          <Route path="/terms-of-service" component={TermsOfService} />
+          <Route path="/data-deletion" component={DataDeletionRequest} />
+          <Route path="/help-support" component={HelpSupport} />
           <Route component={NotFound} />
         </Switch>
         <MobileNav />
@@ -136,6 +189,8 @@ function App() {
   const [currentTab, setCurrentTab] = useState('events');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

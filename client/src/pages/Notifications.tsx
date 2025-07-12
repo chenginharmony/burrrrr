@@ -38,59 +38,14 @@ export default function NotificationsPage() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'achievement',
-      title: 'New Achievement Unlocked!',
-      message: 'You earned the "First Win" achievement for completing your first challenge.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      read: false,
+  const { data: notifications = [], isLoading } = useQuery<Notification[]>({
+    queryKey: ['/api/notifications'],
+    queryFn: async () => {
+      const response = await fetch('/api/notifications', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      return response.json();
     },
-    {
-      id: '2',
-      type: 'friend_request',
-      title: 'Friend Request',
-      message: 'John Doe sent you a friend request.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      read: false,
-      actionRequired: true,
-      actionText: 'Accept',
-      actionId: 'friend_request_123',
-    },
-    {
-      id: '3',
-      type: 'event',
-      title: 'Event Starting Soon',
-      message: 'The "Crypto Price Prediction" event starts in 1 hour. Don\'t miss out!',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-      read: true,
-    },
-    {
-      id: '4',
-      type: 'challenge',
-      title: 'Challenge Completed',
-      message: 'Your challenge against Sarah was completed. You won ₦500!',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-      read: true,
-    },
-    {
-      id: '5',
-      type: 'points',
-      title: 'Daily Login Bonus',
-      message: 'You received ₦100 for your daily login streak!',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      read: true,
-    },
-    {
-      id: '6',
-      type: 'system',
-      title: 'System Update',
-      message: 'New features have been added to improve your experience.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-      read: true,
-    },
-  ]);
+  });
 
   const [activeTab, setActiveTab] = useState('all');
 
@@ -175,33 +130,6 @@ export default function NotificationsPage() {
       />
 
       <div className={`${isMobile ? 'pb-20 pt-16' : 'pt-16'} px-4 max-w-4xl mx-auto`}>
-        {/* Header Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Bell className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Notifications
-            </h1>
-            {unreadCount > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {unreadCount}
-              </Badge>
-            )}
-          </div>
-
-          {unreadCount > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={markAllAsRead}
-              className="flex items-center gap-2"
-            >
-              <CheckCheck className="h-4 w-4" />
-              Mark all read
-            </Button>
-          )}
-        </div>
-
         {/* Notification Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
@@ -215,7 +143,16 @@ export default function NotificationsPage() {
 
           <TabsContent value={activeTab} className="mt-6">
             <div className="space-y-4">
-              {filterNotifications(activeTab).map((notification) => (
+              {isLoading ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Loading notifications...
+                    </h3>
+                  </CardContent>
+                </Card>
+              ) : filterNotifications(activeTab).map((notification) => (
                 <Card 
                   key={notification.id} 
                   className={`transition-all duration-200 ${
@@ -296,7 +233,7 @@ export default function NotificationsPage() {
                 </Card>
               ))}
 
-              {filterNotifications(activeTab).length === 0 && (
+              {!isLoading && filterNotifications(activeTab).length === 0 && (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />

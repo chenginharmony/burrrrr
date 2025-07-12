@@ -19,23 +19,21 @@ export const useAuth = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/user', {
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
+        // Use Supabase client session
+        const { data, error } = await import("../supabaseClient").then(m => m.supabase.auth.getUser());
+        if (data?.user) {
+          setUser({
+            id: data.user.id,
+            email: data.user.email || "",
+            firstName: data.user.user_metadata?.firstName || "",
+            lastName: data.user.user_metadata?.lastName || "",
+            profileImageUrl: data.user.user_metadata?.avatar_url,
+            username: data.user.user_metadata?.username,
+          });
           setIsAuthenticated(true);
-        } else if (response.status === 401) {
-          // Unauthorized - user not logged in
+        } else {
           setUser(null);
           setIsAuthenticated(false);
-        } else {
-          throw new Error(`HTTP ${response.status}`);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -45,20 +43,11 @@ export const useAuth = () => {
         setIsLoading(false);
       }
     };
-
-    // Check for auth error in URL params
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('auth_error')) {
-      console.error('Authentication failed');
-      setIsLoading(false);
-      return;
-    }
-
     checkAuth();
   }, []);
 
   const login = () => {
-    window.location.href = '/api/login';
+    window.location.href = '/login';
   };
 
   const logout = () => {

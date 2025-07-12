@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import {
@@ -57,7 +56,7 @@ export function Header({
         return 'BetChat';
     }
   };
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -70,7 +69,7 @@ export function Header({
     window.history.back();
   };
 
-  const balance = parseFloat(user?.availablePoints || '0');
+  const balance = parseFloat((user?.availablePoints ?? '0').toString());
   const usdEquivalent = (balance * 0.0006).toFixed(2); // Mock conversion rate
 
   // Format the notification count for display
@@ -97,37 +96,22 @@ export function Header({
                 <ArrowLeft className="h-6 w-6" />
               </button>
             )}
-            {/* Show logo only if no back button and no title and on mobile */}
-            {(!showBackButton && (!title || location === '/events') && isMobile) && (
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-lime-500 rounded-lg flex items-center justify-center">
-                <i className="fas fa-dice text-white text-sm" />
-              </div>
-            )}
-            {/* Title always visible if provided */}
-            {(title || isMobile) && (
-              <span className="font-bold text-xl text-gray-900 dark:text-white ml-2">{getPageTitle()}</span>
-            )}
+
+            {/* Logo or Title */}
+            <div className="flex items-center gap-2">
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="h-8 w-8 object-contain"
+              />
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {getPageTitle()}
+              </h1>
+            </div>
           </div>
 
-          {/* Center Section - Search Bar (Desktop Only) */}
-          {showSearch && !isMobile && (
-            <div className="flex-1 max-w-2xl mx-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search events..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Right Section */}
           <div className="flex items-center gap-4">
-            {user ? (
+            {isLoading ? null : user ? (
               <>
                 {/* Leaderboard */}
                 <button
@@ -138,7 +122,6 @@ export function Header({
                 >
                   <i className="fas fa-trophy h-5 w-5 opacity-80 hover:opacity-100 transition-opacity" />
                 </button>
-
                 {/* Messages */}
                 <button
                   type="button"
@@ -148,7 +131,6 @@ export function Header({
                 >
                   <MessageSquare className="h-6 w-6 opacity-100 hover:opacity-100 transition-opacity" />
                 </button>
-
                 {/* Notifications */}
                 <button
                   type="button"
@@ -158,7 +140,6 @@ export function Header({
                 >
                   <Bell className="h-6 w-6" />
                 </button>
-
                 {/* Wallet */}
                 <button
                   type="button"
@@ -172,6 +153,19 @@ export function Header({
                       (${usdEquivalent})
                     </span>
                   </span>
+                </button>
+                {/* Profile Avatar/Menu */}
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/profile')}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors border border-gray-300 dark:border-gray-700"
+                  aria-label="Profile"
+                >
+                  <img
+                    src={user.profileImageUrl || '/default-avatar.png'}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
                 </button>
               </>
             ) : (

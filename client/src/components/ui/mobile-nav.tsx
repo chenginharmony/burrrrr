@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Home', href: '/home', icon: Home },
+  { name: 'History', href: '/history', icon: Home },
   { name: 'Events', href: '/', icon: Calendar },
   { name: 'Games', href: '/challenges', icon: Gamepad2 },
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },

@@ -567,7 +567,7 @@ export default function Events() {
               <Badge className="bg-green-500">LIVE</Badge>
               Live Events
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {liveEvents.map((event) => (
                 <div key={event.id} className="relative">
                   <EventCard
@@ -596,7 +596,7 @@ export default function Events() {
               <Clock className="h-5 w-5" />
               Upcoming Events
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {upcomingEvents.map((event) => (
                 <EventCard
                   key={event.id}

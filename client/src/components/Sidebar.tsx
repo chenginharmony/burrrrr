@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 const navigation = [
   { name: 'Events', href: '/', icon: 'fas fa-calendar-alt' },
   { name: 'Dashboard', href: '/home', icon: 'fas fa-home' },
+  { name: 'History', href: '/history', icon: 'fas fa-history' },
   { name: 'Challenges', href: '/challenges', icon: 'fas fa-gamepad' },
   { name: 'Friends', href: '/friends', icon: 'fas fa-users' },
   { name: 'Wallet', href: '/wallet', icon: 'fas fa-wallet' },

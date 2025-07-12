@@ -30,7 +30,7 @@ export default function Landing() {
                 <i className="fas fa-moon" />
               )}
             </Button>
-            <Button onClick={() => window.location.href = '/api/login'}>
+            <Button onClick={() => window.location.href = '/login'}>
               Sign In
             </Button>
           </div>
@@ -94,7 +94,7 @@ export default function Landing() {
           </div>
 
           <div className="space-y-4">
-            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-lime-500 hover:from-purple-700 hover:to-lime-600 text-white px-8 py-3 text-lg" onClick={() => window.location.href = '/api/login'}>
+            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-lime-500 hover:from-purple-700 hover:to-lime-600 text-white px-8 py-3 text-lg" onClick={() => window.location.href = '/login'}>
               Get Started
             </Button>
             <p className="text-sm text-gray-500 dark:text-gray-400">

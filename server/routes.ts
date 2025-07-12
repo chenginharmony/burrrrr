@@ -2,14 +2,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { paystackService } from './paystack';
 import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema, users, eventParticipants, events } from "@shared/schema";
 import { z } from "zod";
 import passport from "passport";
 import { db } from "./db";
 import { eq, and, or, sql, ne } from "drizzle-orm";
 import crypto from 'crypto';
-import { paystackService } from './paystack';
+import { supabaseIsAuthenticated } from './supabaseAuth';
 
 interface WebSocketClient extends WebSocket {
   userId?: string;
@@ -19,7 +19,7 @@ interface WebSocketClient extends WebSocket {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  // await setupAuth(app);
 
   // Auth routes are handled by setupAuth()
 
@@ -33,9 +33,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', supabaseIsAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Use Supabase authentication: user ID should be at req.user.claims.sub
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -58,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users/:id/follow', isAuthenticated, async (req: any, res) => {
+  app.post('/api/users/:id/follow', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const targetUserId = req.params.id;
@@ -75,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users/:id/unfollow', isAuthenticated, async (req: any, res) => {
+  app.post('/api/users/:id/unfollow', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const targetUserId = req.params.id;
@@ -120,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/transactions/tip', isAuthenticated, async (req: any, res) => {
+  app.post('/api/transactions/tip', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { recipientId, amount } = req.body;
@@ -162,27 +166,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Events routes
-  app.get('/api/events', isAuthenticated, async (req: any, res) => {
+  app.get('/api/events', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
       const searchQuery = req.query.search as string;
       const useRecommendations = req.query.recommended === 'true';
-      
       let events;
-      if (useRecommendations && !searchQuery) {
-        // Get personalized recommendations
-        const recommendedEvents = await storage.getRecommendedEvents(userId, 20);
+      if (useRecommendations && !searchQuery && req.user && req.user.id) {
+        // Get personalized recommendations only if user is authenticated
+        const recommendedEvents = await storage.getRecommendedEvents(req.user.id, 20);
         const regularEvents = await storage.getEvents();
-        
-        // Combine recommended and regular events, prioritizing recommendations
         const recommendedIds = new Set(recommendedEvents.map(e => e.id));
         const otherEvents = regularEvents.filter(e => !recommendedIds.has(e.id));
-        
         events = [...recommendedEvents, ...otherEvents.slice(0, 10)];
       } else {
         events = await storage.getEvents(searchQuery);
       }
-      
       res.json(events);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -191,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single event
-  app.get('/api/events/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/events/:id', async (req: any, res) => {
     try {
       const event = await db.select().from(events).where(eq(events.id, req.params.id)).limit(1);
       if (event.length === 0) {
@@ -221,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get event participants
-  app.get('/api/events/:id/participants', isAuthenticated, async (req: any, res) => {
+  app.get('/api/events/:id/participants', async (req: any, res) => {
     try {
       const participants = await db.select({
         userId: eventParticipants.userId,
@@ -246,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Event recommendations route
-  app.get('/api/events/recommended/:userId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/events/recommended/:userId', async (req: any, res) => {
     try {
       const userId = req.params.userId;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -264,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/events', isAuthenticated, async (req: any, res) => {
+  app.post('/api/events', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertEventSchema.parse({
@@ -291,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/events/:id/join', isAuthenticated, async (req: any, res) => {
+  app.post('/api/events/:id/join', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { prediction, wagerAmount } = req.body;
@@ -445,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user participation in event
-  app.get('/api/events/:id/participation/:userId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/events/:id/participation/:userId', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const { id: eventId, userId } = req.params;
       const currentUserId = req.user.claims.sub;
@@ -490,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Broadcast notification to all users
-  app.post('/api/notifications/broadcast', isAuthenticated, async (req: any, res) => {
+  app.post('/api/notifications/broadcast', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const { type, title, message, eventId } = req.body;
       const userId = req.user.claims.sub;
@@ -540,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/events/:id/messages', isAuthenticated, async (req: any, res) => {
+  app.post('/api/events/:id/messages', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertEventMessageSchema.parse({
@@ -562,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Challenges routes
-  app.get('/api/challenges', isAuthenticated, async (req: any, res) => {
+  app.get('/api/challenges', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const challenges = await storage.getChallenges(userId);
@@ -586,7 +584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/challenges', isAuthenticated, async (req: any, res) => {
+  app.post('/api/challenges', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertChallengeSchema.parse({
@@ -602,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/challenges/:id/accept', isAuthenticated, async (req: any, res) => {
+  app.post('/api/challenges/:id/accept', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       await storage.acceptChallenge(req.params.id, userId);
@@ -613,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/challenges/:id/decline', isAuthenticated, async (req: any, res) => {
+  app.post('/api/challenges/:id/decline', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       await storage.updateChallengeStatus(req.params.id, "declined");
       res.json({ message: "Challenge declined" });
@@ -634,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/challenges/:id/messages', isAuthenticated, async (req: any, res) => {
+  app.post('/api/challenges/:id/messages', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertChallengeMessageSchema.parse({
@@ -656,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Daily login routes
-  app.post('/api/daily-login', isAuthenticated, async (req: any, res) => {
+  app.post('/api/daily-login', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const dailyLogin = await storage.recordDailyLogin(userId);
@@ -668,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notifications routes
-  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+  app.get('/api/notifications', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const notifications = await storage.getUserNotifications(userId);
@@ -679,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/notifications/:id/read', isAuthenticated, async (req, res) => {
+  app.post('/api/notifications/:id/read', supabaseIsAuthenticated, async (req, res) => {
     try {
       await storage.markNotificationAsRead(req.params.id);
       res.json({ message: "Notification marked as read" });
@@ -690,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transactions routes
-  app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
+  app.get('/api/transactions', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const transactions = await storage.getUserTransactions(userId);
@@ -702,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Users routes
-  app.get('/api/users', isAuthenticated, async (req: any, res) => {
+  app.get('/api/users', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const friends = await storage.getUserFriends(userId);
@@ -713,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/users/search', isAuthenticated, async (req: any, res) => {
+  app.get('/api/users/search', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const currentUserId = req.user.claims.sub;
       const searchQuery = req.query.q as string;
@@ -740,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user profile by ID
-  app.get('/api/users/:userId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/users/:userId', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const { userId } = req.params;
 
@@ -792,7 +790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Friends routes
-  app.get('/api/friends', isAuthenticated, async (req: any, res) => {
+  app.get('/api/friends', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const friends = await db.query.users.findMany({
         where: ne(users.id, req.user.id),
@@ -820,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
     // Follow/Unfollow user
-  app.post('/api/users/:userId/follow', isAuthenticated, async (req: any, res) => {
+  app.post('/api/users/:userId/follow', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const { userId } = req.params;
 
@@ -846,7 +844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users/:userId/unfollow', isAuthenticated, async (req: any, res) => {
+  app.post('/api/users/:userId/unfollow', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const { userId } = req.params;
 
@@ -860,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send tip to user
-  app.post('/api/transactions/tip', isAuthenticated, async (req: any, res) => {
+  app.post('/api/transactions/tip', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const { recipientId, amount } = req.body;
 
@@ -928,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/friends/request', isAuthenticated, async (req: any, res) => {
+  app.post('/api/friends/request', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { friendId } = req.body;
@@ -942,7 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  app.post('/api/friends/accept', isAuthenticated, async (req: any, res) => {
+  app.post('/api/friends/accept', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { friendId } = req.body;
@@ -967,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User achievements routes
-  app.get('/api/achievements', isAuthenticated, async (req: any, res) => {
+  app.get('/api/achievements', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const achievements = await storage.getUserAchievements(userId);
@@ -979,7 +977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Referral routes
-  app.get('/api/referral/code', isAuthenticated, async (req: any, res) => {
+  app.get('/api/referral/code', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const referralCode = await storage.generateReferralCode(userId);
@@ -990,7 +988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/referral/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/referral/stats', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const stats = await storage.getReferralStats(userId);
@@ -1001,7 +999,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/referral/apply', isAuthenticated, async (req: any, res) => {
+  app.post('/api/referral/apply', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { referralCode } = req.body;
@@ -1019,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
     // Create a new transaction
-  app.post('/api/transactions', isAuthenticated, async (req: any, res) => {
+  app.post('/api/transactions', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const { type, amount, description } = req.body;
 
@@ -1121,7 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Wallet routes
-  app.post('/api/wallet/deposit', isAuthenticated, async (req: any, res) => {
+  app.post('/api/wallet/deposit', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { amount } = req.body;
@@ -1162,7 +1160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/wallet/verify-payment', isAuthenticated, async (req: any, res) => {
+  app.post('/api/wallet/verify-payment', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { reference } = req.body;
@@ -1202,7 +1200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/wallet/withdraw', isAuthenticated, async (req: any, res) => {
+  app.post('/api/wallet/withdraw', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { amount, accountNumber, bankCode, accountName } = req.body;
