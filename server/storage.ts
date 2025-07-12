@@ -13,6 +13,7 @@ import {
   escrow,
   friends,
   eventPools,
+  eventMatches,
   type User,
   type UpsertUser,
   type Event,

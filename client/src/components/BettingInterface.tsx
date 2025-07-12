@@ -28,10 +28,10 @@ export function BettingInterface({ eventId, eventTitle, onBetPlaced }: BettingIn
     mutationFn: async ({ prediction, amount }: { prediction: boolean; amount: number }) => {
       return apiRequest(`/api/events/${eventId}/join`, {
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           prediction,
           wagerAmount: amount,
-        }),
+        },
       });
     },
     onSuccess: (response) => {

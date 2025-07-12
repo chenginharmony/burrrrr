@@ -262,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/events', async (req: any, res) => {
+  app.post('/api/events', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertEventSchema.parse({
@@ -289,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/events/:id/join', async (req: any, res) => {
+  app.post('/api/events/:id/join', supabaseIsAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { prediction, wagerAmount } = req.body;
