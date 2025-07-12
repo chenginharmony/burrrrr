@@ -47,26 +47,51 @@ export function WalletSystem() {
       return data;
     },
     onSuccess: (response) => {
-      // Initialize Paystack payment modal (same page)
-      const handler = window.PaystackPop.setup({
-        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_77336172671b6e12b2b92f59a0a2035f7f20c54c',
-        email: user?.email,
-        amount: parseFloat(depositAmount) * 100, // Convert to kobo
-        currency: 'NGN',
-        ref: response.reference,
-        callback: function(response: any) {
-          // Verify payment on backend
-          verifyPayment.mutate(response.reference);
-        },
-        onClose: function() {
-          toast({
-            title: "Payment Cancelled",
-            description: "Your deposit was cancelled.",
-            variant: "destructive"
-          });
-        }
-      });
-      handler.openIframe(); // This opens modal on same page, not new tab
+      // Check if Paystack is loaded
+      if (!window.PaystackPop) {
+        toast({
+          title: "Payment Error",
+          description: "Payment system not loaded. Please refresh and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Initialize Paystack payment modal (inline)
+      try {
+        const handler = window.PaystackPop.setup({
+          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_77336172671b6e12b2b92f59a0a2035f7f20c54c',
+          email: user?.email,
+          amount: parseFloat(depositAmount) * 100, // Convert to kobo
+          currency: 'NGN',
+          ref: response.reference,
+          embed: false, // Ensure it's not embedded, but modal
+          onSuccess: function(transaction: any) {
+            // Verify payment on backend
+            verifyPayment.mutate(transaction.reference);
+          },
+          onCancel: function() {
+            toast({
+              title: "Payment Cancelled",
+              description: "Your deposit was cancelled.",
+              variant: "destructive"
+            });
+          },
+          onClose: function() {
+            // Optional: handle when modal is closed without action
+          }
+        });
+        
+        // Use openIframe for inline modal (not new window)
+        handler.openIframe();
+      } catch (error) {
+        console.error('Paystack setup error:', error);
+        toast({
+          title: "Payment Error",
+          description: "Failed to initialize payment. Please try again.",
+          variant: "destructive"
+        });
+      }
     },
     onError: (error: any) => {
       toast({

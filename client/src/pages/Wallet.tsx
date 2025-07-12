@@ -37,23 +37,33 @@ export default function WalletPage() {
     onSuccess: async (data) => {
       // Use Paystack modal instead of new tab
       if (window.PaystackPop && data.reference) {
-        const handler = window.PaystackPop.setup({
-          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_77336172671b6e12b2b92f59a0a2035f7f20c54c',
-          email: user?.email,
-          amount: parseFloat(depositAmount) * 100,
-          currency: 'NGN',
-          ref: data.reference,
-          callback: function(response: any) {
-            verifyPayment.mutate(response.reference);
-          },
-          onClose: function() {
-            toast.showError('Payment cancelled');
-          }
-        });
-        handler.openIframe();
-      } else if (data.authorization_url) {
-        // Fallback to new tab if modal fails
-        window.open(data.authorization_url, '_blank');
+        try {
+          const handler = window.PaystackPop.setup({
+            key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_77336172671b6e12b2b92f59a0a2035f7f20c54c',
+            email: user?.email,
+            amount: parseFloat(depositAmount) * 100,
+            currency: 'NGN',
+            ref: data.reference,
+            embed: false, // Ensure modal mode
+            onSuccess: function(transaction: any) {
+              verifyPayment.mutate(transaction.reference);
+            },
+            onCancel: function() {
+              toast.showError('Payment cancelled');
+            },
+            onClose: function() {
+              // Modal closed
+            }
+          });
+          
+          // Force inline modal instead of new window
+          handler.openIframe();
+        } catch (error) {
+          console.error('Paystack modal error:', error);
+          toast.showError('Failed to open payment modal');
+        }
+      } else {
+        toast.showError('Payment initialization failed');
       }
     },
     onError: (error: any) => {
