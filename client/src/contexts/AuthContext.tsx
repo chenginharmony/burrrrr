@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../supabaseClient';
+import type { Session } from '@supabase/supabase-js';
 
 export interface User {
   id: string;
@@ -16,18 +17,22 @@ interface AuthContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   loading: boolean;
+  session: Session | null;
+  isAuthenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
         if (session?.user) {
           setCurrentUser({
             id: session.user.id,
@@ -50,6 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        setSession(session);
         if (session?.user) {
           setCurrentUser({
             id: session.user.id,
@@ -69,8 +75,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const isAuthenticated = !!currentUser && !!session;
+
   return (
-    <AuthContext.Provider value={{ currentUser, setCurrentUser, loading }}>
+    <AuthContext.Provider value={{ 
+      currentUser, 
+      setCurrentUser, 
+      loading, 
+      session, 
+      isAuthenticated 
+    }}>
       {children}
     </AuthContext.Provider>
   );

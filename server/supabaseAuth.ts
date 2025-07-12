@@ -1,26 +1,40 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Request, Response, NextFunction } from 'express';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY!
 );
 
-export { supabase };
+export const supabaseIsAuthenticated = async (req: any, res: any, next: any) => {
+  try {
+    // Check for token in Authorization header first
+    let token = req.headers.authorization?.replace('Bearer ', '');
 
-export async function supabaseIsAuthenticated(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    return res.status(401).json({ message: 'Unauthorized: No token provided' });
+    // If not in header, check query params (for WebSocket)
+    if (!token && req.query?.token) {
+      token = req.query.token;
+    }
+
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      console.error('Supabase auth error:', error);
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    req.user = { 
+      id: user.id,
+      claims: { sub: user.id },
+      email: user.email,
+      ...user 
+    };
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ message: 'Authentication failed' });
   }
-
-  const token = authHeader.replace('Bearer ', '');
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error || !data?.user) {
-    return res.status(401).json({ message: 'Unauthorized: Invalid token' });
-  }
-
-  req.user = data.user;
-  next();
-}
+};

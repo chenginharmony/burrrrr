@@ -1061,12 +1061,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // WebSocket server setup
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    verifyClient: async (info) => {
+      try {
+        const url = new URL(info.req.url!, `http://${info.req.headers.host}`);
+        const token = url.searchParams.get('token');
+        
+        if (!token) {
+          console.log('WebSocket connection rejected: No token');
+          return false;
+        }
+
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user) {
+          console.log('WebSocket connection rejected: Invalid token');
+          return false;
+        }
+
+        // Store user info for later use
+        (info.req as any).user = user;
+        return true;
+      } catch (error) {
+        console.error('WebSocket verification error:', error);
+        return false;
+      }
+    }
+  });
+  
   const clients = new Set<WebSocketClient>();
 
-  wss.on('connection', (ws: WebSocketClient) => {
+  wss.on('connection', (ws: WebSocketClient, req) => {
     clients.add(ws);
-    console.log('New WebSocket connection');
+    ws.userId = (req as any).user?.id;
+    console.log('New WebSocket connection for user:', ws.userId);
 
     ws.on('message', async (message: Buffer) => {
       try {
