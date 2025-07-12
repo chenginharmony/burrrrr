@@ -1,99 +1,82 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
-import type { Session } from '@supabase/supabase-js';
-
-export interface User {
-  id: string;
-  username?: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-  profileImageUrl?: string;
-  availablePoints?: number;
-  totalEarnings?: number;
-}
 
 interface AuthContextType {
-  currentUser: User | null;
-  setCurrentUser: (user: User | null) => void;
-  loading: boolean;
+  user: User | null;
   session: Session | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  signOut: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+export { AuthContext };
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        if (session?.user) {
-          setCurrentUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: session.user.user_metadata?.firstName || '',
-            lastName: session.user.user_metadata?.lastName || '',
-            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
-            profileImageUrl: session.user.user_metadata?.avatar_url,
-          });
-        }
-      } catch (error) {
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
         console.error('Error getting session:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
       }
+      setIsLoading(false);
     };
 
-    getSession();
+    getInitialSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session);
         setSession(session);
-        if (session?.user) {
-          setCurrentUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: session.user.user_metadata?.firstName || '',
-            lastName: session.user.user_metadata?.lastName || '',
-            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
-            profileImageUrl: session.user.user_metadata?.avatar_url,
-          });
-        } else {
-          setCurrentUser(null);
-        }
-        setLoading(false);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const isAuthenticated = !!currentUser && !!session;
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    session,
+    isAuthenticated: !!session,
+    isLoading,
+    signOut,
+  };
 
   return (
-    <AuthContext.Provider value={{ 
-      currentUser, 
-      setCurrentUser, 
-      loading, 
-      session, 
-      isAuthenticated 
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}

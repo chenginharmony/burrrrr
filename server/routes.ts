@@ -248,12 +248,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.params.userId;
       const limit = parseInt(req.query.limit as string) || 10;
-      
+
       // Verify user can access these recommendations
       if (req.user.claims.sub !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const recommendations = await storage.getRecommendedEvents(userId, limit);
       res.json(recommendations);
     } catch (error) {
@@ -271,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const event = await storage.createEvent(validatedData);
-      
+
       // Get creator info
       const creator = await storage.getUser(userId);
       const eventWithCreator = {
@@ -281,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: creator?.username || creator?.firstName,
         }
       };
-      
+
       res.status(201).json(eventWithCreator);
     } catch (error) {
       console.error("Error creating event:", error);
@@ -354,11 +354,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Look for matching opponent
       const matchedUserId = await storage.findEventMatch(eventId, userId, prediction, wagerAmount);
-      
+
       if (matchedUserId) {
         // Get matched user details
         const matchedUser = await storage.getUser(matchedUserId);
-        
+
         // Create match record
         await storage.createEventMatch(
           eventId,
@@ -410,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/events/:id/pool', async (req, res) => {
     try {
       const eventId = req.params.id;
-      
+
       // Get pool amounts
       const [pool] = await db.select()
         .from(eventPools)
@@ -492,13 +492,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { type, title, message, eventId } = req.body;
       const userId = req.user.claims.sub;
-      
+
       console.log('Broadcasting notification:', { type, title, message, eventId });
-      
+
       // Get user info for the notification
       const creator = await storage.getUser(userId);
       const notificationMessage = `@${creator?.username || creator?.firstName || 'Someone'} has just created a new event. Join now!`;
-      
+
       // Broadcast to all connected WebSocket clients
       const notification = {
         type: 'new_event_notification',
@@ -512,14 +512,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString()
         }
       };
-      
+
       // Send to all connected clients
       wss.clients.forEach((client: WebSocketClient) => {
         if (client.readyState === WebSocket.OPEN && client.userId !== userId) {
           client.send(JSON.stringify(notification));
         }
       });
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Error broadcasting notification:", error);
@@ -1103,7 +1103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const url = new URL(info.req.url!, `http://${info.req.headers.host}`);
         const token = url.searchParams.get('token');
-        
+
         if (!token) {
           console.log('WebSocket connection rejected: No token');
           return false;
@@ -1124,7 +1124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
-  
+
   const clients = new Set<WebSocketClient>();
 
   wss.on('connection', (ws: WebSocketClient, req) => {
@@ -1187,28 +1187,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { amount } = req.body;
-      
+
       if (!amount || amount < 100) {
         return res.status(400).json({ message: "Minimum deposit amount is ₦100" });
       }
-      
+
       if (amount > 1000000) {
         return res.status(400).json({ message: "Maximum deposit amount is ₦1,000,000" });
       }
-      
+
       const user = await storage.getUser(userId);
       if (!user?.email) {
         return res.status(400).json({ message: "User email not found" });
       }
-      
+
       const reference = paystackService.generateReference();
-      
+
       const response = await paystackService.initializeTransaction(
         amount,
         user.email,
         reference
       );
-      
+
       if (response.status) {
         res.json({
           authorization_url: response.data.authorization_url,
@@ -1228,12 +1228,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { reference } = req.body;
-      
+
       const response = await paystackService.verifyTransaction(reference);
-      
+
       if (response.status && response.data.status === 'success') {
         const amount = response.data.amount / 100; // Convert from kobo
-        
+
         // Update user balance
         await db
           .update(users)
@@ -1242,7 +1242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updatedAt: new Date(),
           })
           .where(eq(users.id, userId));
-        
+
         // Create transaction record
         await storage.createTransaction({
           userId,
@@ -1253,7 +1253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           referenceId: reference,
           metadata: response.data
         });
-        
+
         res.json({ message: "Payment verified and balance updated" });
       } else {
         res.status(400).json({ message: "Payment verification failed" });
@@ -1268,18 +1268,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { amount, accountNumber, bankCode, accountName } = req.body;
-      
+
       if (!amount || amount < 500) {
         return res.status(400).json({ message: "Minimum withdrawal amount is ₦500" });
       }
-      
+
       const user = await storage.getUser(userId);
       const balance = parseFloat(user?.availablePoints || '0');
-      
+
       if (amount > balance) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
-      
+
       // Deduct amount from user's balance
       await db
         .update(users)
@@ -1288,7 +1288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updatedAt: new Date(),
         })
         .where(eq(users.id, userId));
-      
+
       // Create transaction record
       await storage.createTransaction({
         userId,
@@ -1298,7 +1298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'pending',
         metadata: { accountNumber, bankCode, accountName }
       });
-      
+
       res.json({ message: "Withdrawal request submitted successfully" });
     } catch (error) {
       console.error("Error processing withdrawal:", error);

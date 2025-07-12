@@ -127,13 +127,13 @@ function AppContent() {
             <Route path="/notifications" component={() => <><Header title="Notifications" /><Notifications /></>} />
             <Route path="/profile" component={() => <><Header title="Profile" /><Profile /></>} />
             <Route path="/referral" component={() => <><Header title="Refer & Earn" /><ReferralPage /></>} />
-            <Route path="/profile-settings" component={ProfileSettings} />
-            <Route path="/levels-badges" component={LevelsBadges} />
-            <Route path="/settings" component={Settings} />
-            <Route path="/privacy-security" component={PrivacySecurity} />
-            <Route path="/terms-of-service" component={TermsOfService} />
-            <Route path="/data-deletion" component={DataDeletionRequest} />
-            <Route path="/help-support" component={HelpSupport} />
+            <Route path="/profile-settings" component={() => <><Header title="Profile Settings" /><ProfileSettings /></>} />
+            <Route path="/levels-badges" component={() => <><Header title="Levels & Badges" /><LevelsBadges /></>} />
+            <Route path="/settings" component={() => <><Header title="Settings" /><Settings /></>} />
+            <Route path="/privacy-security" component={() => <><Header title="Privacy & Security" /><PrivacySecurity /></>} />
+            <Route path="/terms-of-service" component={() => <><Header title="Terms of Service" /><TermsOfService /></>} />
+            <Route path="/data-deletion" component={() => <><Header title="Data Deletion" /><DataDeletionRequest /></>} />
+            <Route path="/help-support" component={() => <><Header title="Help & Support" /><HelpSupport /></>} />
             <Route component={() => <><Header title="404" /><NotFound /></>} />
           </Switch>
         </div>
@@ -153,13 +153,13 @@ function AppContent() {
           <Route path="/notifications" component={() => <><Header title="Notifications" /><Notifications /></>} />
           <Route path="/profile" component={() => <><Header title="Profile" /><Profile /></>} />
           <Route path="/referral" component={() => <><Header title="Refer & Earn" /><ReferralPage /></>} />
-          <Route path="/profile-settings" component={ProfileSettings} />
-          <Route path="/levels-badges" component={LevelsBadges} />
-          <Route path="/settings" component={Settings} />
-          <Route path="/privacy-security" component={PrivacySecurity} />
-          <Route path="/terms-of-service" component={TermsOfService} />
-          <Route path="/data-deletion" component={DataDeletionRequest} />
-          <Route path="/help-support" component={HelpSupport} />
+          <Route path="/profile-settings" component={() => <><Header title="Profile Settings" /><ProfileSettings /></>} />
+          <Route path="/levels-badges" component={() => <><Header title="Levels & Badges" /><LevelsBadges /></>} />
+          <Route path="/settings" component={() => <><Header title="Settings" /><Settings /></>} />
+          <Route path="/privacy-security" component={() => <><Header title="Privacy & Security" /><PrivacySecurity /></>} />
+          <Route path="/terms-of-service" component={() => <><Header title="Terms of Service" /><TermsOfService /></>} />
+          <Route path="/data-deletion" component={() => <><Header title="Data Deletion" /><DataDeletionRequest /></>} />
+          <Route path="/help-support" component={() => <><Header title="Help & Support" /><HelpSupport /></>} />
           <Route component={NotFound} />
         </Switch>
         <MobileNav />
