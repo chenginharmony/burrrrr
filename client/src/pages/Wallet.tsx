@@ -35,8 +35,24 @@ export default function WalletPage() {
       return data;
     },
     onSuccess: async (data) => {
-      // Open Paystack payment page
-      if (data.authorization_url) {
+      // Use Paystack modal instead of new tab
+      if (window.PaystackPop && data.reference) {
+        const handler = window.PaystackPop.setup({
+          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_77336172671b6e12b2b92f59a0a2035f7f20c54c',
+          email: user?.email,
+          amount: parseFloat(depositAmount) * 100,
+          currency: 'NGN',
+          ref: data.reference,
+          callback: function(response: any) {
+            verifyPayment.mutate(response.reference);
+          },
+          onClose: function() {
+            toast.showError('Payment cancelled');
+          }
+        });
+        handler.openIframe();
+      } else if (data.authorization_url) {
+        // Fallback to new tab if modal fails
         window.open(data.authorization_url, '_blank');
       }
     },
@@ -49,14 +65,37 @@ export default function WalletPage() {
     },
   });
 
+  // Payment verification mutation
+  const verifyPayment = useMutation({
+    mutationFn: async (reference: string) => {
+      const res = await apiRequest('POST', '/api/wallet/verify-payment', { reference });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      const amount = parseFloat(depositAmount);
+      toast.showError(`✅ ₦${amount.toLocaleString()} deposited successfully! Ready for betting.`);
+      setDepositAmount('');
+      setIsDepositDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+    },
+    onError: (error: any) => {
+      toast.showError('Payment verification failed. Contact support if money was debited.');
+    },
+  });
+
   // Withdraw mutation
   const withdrawMutation = useMutation({
     mutationFn: async (payload: { amount: number; accountNumber: string; bankCode: string; accountName: string }) => {
       const res = await apiRequest('POST', '/api/wallet/withdraw', payload);
       return await res.json();
     },
-    onSuccess: () => {
-      toast.showError('Withdrawal request submitted.');
+    onSuccess: (data) => {
+      const amount = parseFloat(withdrawAmount);
+      toast.showError(`💰 ₦${amount.toLocaleString()} withdrawal requested successfully! Processing may take 1-3 business days.`);
+      setWithdrawAmount('');
+      setIsWithdrawDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
     },
     onError: (error: any) => {

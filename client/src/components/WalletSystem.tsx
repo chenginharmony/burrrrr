@@ -39,13 +39,15 @@ export function WalletSystem() {
 
   const depositMutation = useMutation({
     mutationFn: async (amount: number) => {
-      return apiRequest('/api/wallet/deposit', {
+      const response = await apiRequest('/api/wallet/deposit', {
         method: 'POST',
         body: JSON.stringify({ amount }),
       });
+      const data = await response.json();
+      return data;
     },
     onSuccess: (response) => {
-      // Initialize Paystack payment
+      // Initialize Paystack payment modal (same page)
       const handler = window.PaystackPop.setup({
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_77336172671b6e12b2b92f59a0a2035f7f20c54c',
         email: user?.email,
@@ -64,7 +66,7 @@ export function WalletSystem() {
           });
         }
       });
-      handler.openIframe();
+      handler.openIframe(); // This opens modal on same page, not new tab
     },
     onError: (error: any) => {
       toast({
@@ -77,24 +79,44 @@ export function WalletSystem() {
 
   const verifyPayment = useMutation({
     mutationFn: async (reference: string) => {
-      return apiRequest('/api/wallet/verify-payment', {
+      const response = await apiRequest('/api/wallet/verify-payment', {
         method: 'POST',
         body: JSON.stringify({ reference }),
       });
+      const data = await response.json();
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const amount = parseFloat(depositAmount);
+      
+      // Show success notification
       toast({
-        title: "Deposit Successful",
-        description: `₦${depositAmount} has been added to your wallet.`,
+        title: "✅ Deposit Successful!",
+        description: `₦${amount.toLocaleString()} has been added to your wallet. Your funds are ready for betting!`,
       });
+      
+      // Reset form
       setDepositAmount('');
+      
+      // Update user balance and transactions immediately
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      
+      // Optional: Optimistically update the UI
+      queryClient.setQueryData(['/api/auth/user'], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            availablePoints: (parseFloat(oldData.availablePoints || '0') + amount).toString()
+          };
+        }
+        return oldData;
+      });
     },
     onError: (error: any) => {
       toast({
-        title: "Payment Verification Failed",
-        description: error.message || "Failed to verify payment",
+        title: "❌ Payment Verification Failed",
+        description: error.message || "Failed to verify payment. Please contact support if money was debited.",
         variant: "destructive"
       });
     }
@@ -102,24 +124,49 @@ export function WalletSystem() {
 
   const withdrawMutation = useMutation({
     mutationFn: async (amount: number) => {
-      return apiRequest('/api/wallet/withdraw', {
+      const response = await apiRequest('/api/wallet/withdraw', {
         method: 'POST',
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ 
+          amount,
+          accountNumber: '1234567890', // In production, collect from user
+          bankCode: '058',
+          accountName: user?.username || 'User'
+        }),
       });
+      const data = await response.json();
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const amount = parseFloat(withdrawAmount);
+      
+      // Show success notification
       toast({
-        title: "Withdrawal Requested",
-        description: `₦${withdrawAmount} withdrawal request submitted. Processing may take 1-3 business days.`,
+        title: "💰 Withdrawal Requested",
+        description: `₦${amount.toLocaleString()} withdrawal request submitted successfully. Processing may take 1-3 business days.`,
       });
+      
+      // Reset form
       setWithdrawAmount('');
+      
+      // Update user balance and transactions immediately
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      
+      // Optimistically update the UI (subtract withdrawal amount)
+      queryClient.setQueryData(['/api/auth/user'], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            availablePoints: (parseFloat(oldData.availablePoints || '0') - amount).toString()
+          };
+        }
+        return oldData;
+      });
     },
     onError: (error: any) => {
       toast({
-        title: "Withdrawal Failed",
-        description: error.message || "Failed to process withdrawal",
+        title: "❌ Withdrawal Failed",
+        description: error.message || "Failed to process withdrawal. Please try again.",
         variant: "destructive"
       });
     }

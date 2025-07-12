@@ -1262,7 +1262,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           metadata: response.data
         });
 
-        res.json({ message: "Payment verified and balance updated" });
+        // Send WebSocket notification to user
+        const notification = {
+          type: 'deposit_success',
+          data: {
+            userId,
+            amount,
+            message: `₦${amount.toLocaleString()} deposited successfully! Your funds are ready for betting.`,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        // Broadcast to user's WebSocket connection
+        wss.clients.forEach((client: WebSocketClient) => {
+          if (client.readyState === WebSocket.OPEN && client.userId === userId) {
+            client.send(JSON.stringify(notification));
+          }
+        });
+
+        res.json({ 
+          message: "Payment verified and balance updated",
+          amount,
+          newBalance: (parseFloat(user?.availablePoints || '0') + amount).toString()
+        });
       } else {
         res.status(400).json({ message: "Payment verification failed" });
       }
@@ -1311,7 +1333,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { accountNumber, bankCode, accountName }
       });
 
-      res.json({ message: "Withdrawal request submitted successfully" });
+      // Send WebSocket notification to user
+      const notification = {
+        type: 'withdrawal_success',
+        data: {
+          userId,
+          amount,
+          message: `₦${amount.toLocaleString()} withdrawal request submitted. Processing may take 1-3 business days.`,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      // Broadcast to user's WebSocket connection
+      wss.clients.forEach((client: WebSocketClient) => {
+        if (client.readyState === WebSocket.OPEN && client.userId === userId) {
+          client.send(JSON.stringify(notification));
+        }
+      });
+
+      res.json({ 
+        message: "Withdrawal request submitted successfully",
+        amount,
+        newBalance: (parseFloat(user?.availablePoints || '0') - amount).toString()
+      });
     } catch (error) {
       console.error("Error processing withdrawal:", error);
       res.status(500).json({ message: "Failed to process withdrawal" });
