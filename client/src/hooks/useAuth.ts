@@ -8,7 +8,7 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
 
-  const { currentUser, loading, session, isAuthenticated } = context;
+  const { user, isLoading, session, isAuthenticated } = context;
 
   const login = async (email: string, password: string) => {
     try {
@@ -65,10 +65,10 @@ export const useAuth = () => {
   };
 
   return {
-    user: currentUser,
+    user,
     session,
     isAuthenticated,
-    isLoading: loading,
+    isLoading,
     login,
     signUp,
     logout,
