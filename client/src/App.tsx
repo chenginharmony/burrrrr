@@ -187,11 +187,6 @@ function AppContent() {
 }
 
 function App() {
-  const [currentTab, setCurrentTab] = useState('events');
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const [modalOpen, setModalOpen] = useState(false);
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

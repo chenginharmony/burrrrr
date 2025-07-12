@@ -29,10 +29,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated || !user || !session) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
+    const host = window.location.hostname;
+    const port = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
     
     // Construct the WebSocket URL with the token
-    const wsUrl = `${protocol}//${host}/ws?token=${session.access_token}`;
+    const wsUrl = `${protocol}//${host}:${port}/ws?token=${session.access_token}`;
     
     console.log('Connecting to WebSocket:', wsUrl);
 
