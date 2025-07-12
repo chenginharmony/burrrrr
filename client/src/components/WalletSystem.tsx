@@ -41,7 +41,7 @@ export function WalletSystem() {
     mutationFn: async (amount: number) => {
       const response = await apiRequest('/api/wallet/deposit', {
         method: 'POST',
-        body: JSON.stringify({ amount }),
+        body: { amount },
       });
       const data = await response.json();
       return data;
@@ -118,7 +118,7 @@ export function WalletSystem() {
     mutationFn: async (reference: string) => {
       const response = await apiRequest('/api/wallet/verify-payment', {
         method: 'POST',
-        body: JSON.stringify({ reference }),
+        body: { reference },
       });
       const data = await response.json();
       return data;
@@ -163,12 +163,12 @@ export function WalletSystem() {
     mutationFn: async (amount: number) => {
       const response = await apiRequest('/api/wallet/withdraw', {
         method: 'POST',
-        body: JSON.stringify({ 
+        body: { 
           amount,
           accountNumber: '1234567890', // In production, collect from user
           bankCode: '058',
           accountName: user?.username || 'User'
-        }),
+        },
       });
       const data = await response.json();
       return data;

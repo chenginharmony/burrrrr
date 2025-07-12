@@ -8,10 +8,15 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
-  data?: unknown | undefined,
+  options?: {
+    method?: string,
+    body?: any,
+    headers?: Record<string, string>
+  }
 ): Promise<Response> {
+  const method = options?.method || 'GET';
+  const data = options?.body;
   // Get Supabase access token if available
   let accessToken = '';
   try {
@@ -44,8 +49,24 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Get Supabase access token if available
+    let accessToken = '';
+    try {
+      const { supabase } = await import('../supabaseClient');
+      const session = await supabase.auth.getSession();
+      accessToken = session?.data?.session?.access_token || '';
+    } catch (e) {
+      // fallback: no token
+    }
+
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
