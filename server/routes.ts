@@ -3,13 +3,13 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { paystackService } from './paystack';
-import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema, users, eventParticipants, events } from "@shared/schema";
+import { insertEventSchema, insertChallengeSchema, insertEventMessageSchema, insertChallengeMessageSchema, users, eventParticipants, events, eventPools, transactions } from "@shared/schema";
 import { z } from "zod";
 import passport from "passport";
 import { db } from "./db";
 import { eq, and, or, sql, ne } from "drizzle-orm";
 import crypto from 'crypto';
-import { supabaseIsAuthenticated } from './supabaseAuth';
+import { supabaseIsAuthenticated, supabase } from './supabaseAuth';
 
 interface WebSocketClient extends WebSocket {
   userId?: string;
@@ -1185,8 +1185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wallet routes
   app.post('/api/wallet/deposit', supabaseIsAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const { amount } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
 
       if (!amount || amount < 100) {
         return res.status(400).json({ message: "Minimum deposit amount is ₦100" });
@@ -1226,8 +1230,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/wallet/verify-payment', supabaseIsAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const { reference } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
 
       const response = await paystackService.verifyTransaction(reference);
 
@@ -1266,8 +1274,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/wallet/withdraw', supabaseIsAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const { amount, accountNumber, bankCode, accountName } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
 
       if (!amount || amount < 500) {
         return res.status(400).json({ message: "Minimum withdrawal amount is ₦500" });

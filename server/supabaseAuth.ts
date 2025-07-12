@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { storage } from './storage';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY!
 );
+
+export { supabase };
 
 export const supabaseIsAuthenticated = async (req: any, res: any, next: any) => {
   try {
@@ -39,8 +42,14 @@ export const supabaseIsAuthenticated = async (req: any, res: any, next: any) => 
       console.error('Error upserting user to database:', dbError);
     }
 
-    // Attach user to request
-    req.user = user;
+    // Attach user to request with correct structure
+    req.user = {
+      id: user.id,
+      email: user.email,
+      claims: {
+        sub: user.id
+      }
+    };
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
