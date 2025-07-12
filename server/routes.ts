@@ -35,8 +35,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/user', supabaseIsAuthenticated, async (req: any, res) => {
     try {
-      // Use Supabase authentication: user ID should be at req.user.claims.sub
-      const userId = req.user?.claims?.sub;
+      // Use Supabase authentication: user ID should be at req.user.id
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }

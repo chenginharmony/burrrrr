@@ -1,64 +1,76 @@
-import { useState, useEffect } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  profileImageUrl?: string;
-  username?: string;
-  availablePoints?: number;
-  totalEarnings?: number;
-}
+import { useContext } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
+import { supabase } from '../supabaseClient';
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Use Supabase client session
-        const { data, error } = await import("../supabaseClient").then(m => m.supabase.auth.getUser());
-        if (data?.user) {
-          setUser({
-            id: data.user.id,
-            email: data.user.email || "",
-            firstName: data.user.user_metadata?.firstName || "",
-            lastName: data.user.user_metadata?.lastName || "",
-            profileImageUrl: data.user.user_metadata?.avatar_url,
-            username: data.user.user_metadata?.username,
-          });
-          setIsAuthenticated(true);
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        setUser(null);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkAuth();
-  }, []);
+  const { currentUser, loading } = context;
 
-  const login = () => {
-    window.location.href = '/login';
+  const login = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  const logout = () => {
-    window.location.href = '/api/logout';
+  const signUp = async (email: string, password: string, metadata?: any) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Sign up error:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      throw error;
+    }
   };
 
   return {
-    user,
-    isAuthenticated,
-    isLoading,
+    user: currentUser,
+    isAuthenticated: !!currentUser,
+    isLoading: loading,
     login,
-    logout
+    signUp,
+    logout,
+    signInWithGoogle
   };
 };

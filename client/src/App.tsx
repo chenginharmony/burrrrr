@@ -16,6 +16,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import SignInModal from "./components/SignInModal";
 import "./components/SignInModal.css";
+import { AuthProvider } from './contexts/AuthContext';
 
 // Pages
 import ProfileSettings from "@/pages/ProfileSettings";
@@ -169,13 +170,13 @@ function AppContent() {
         achievement={achievement}
         onClose={() => setAchievement(null)}
       />
-      
+
       {/* Event Notification */}
       <EventNotification
         notification={eventNotification}
         onClose={() => setEventNotification(null)}
       />
-      
+
       {/* Match Notification */}
       <MatchNotification
         notification={matchNotification}
@@ -194,12 +195,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <WebSocketProvider>
-          <TooltipProvider>
-            <Toaster />
-            <AppContent />
-          </TooltipProvider>
-        </WebSocketProvider>
+        <AuthProvider>
+          <WebSocketProvider>
+            <TooltipProvider>
+              <Toaster />
+              <AppContent />
+            </TooltipProvider>
+          </WebSocketProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

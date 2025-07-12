@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '../supabaseClient';
 
 export interface User {
   id: string;
   username?: string;
   email?: string;
-  // Add other user fields as needed
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  availablePoints?: number;
+  totalEarnings?: number;
 }
 
 interface AuthContextType {
@@ -20,9 +25,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Replace with real authentication logic (e.g., Supabase session fetch)
-    // For now, simulate loading and no user
-    setLoading(false);
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setCurrentUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            firstName: session.user.user_metadata?.firstName || '',
+            lastName: session.user.user_metadata?.lastName || '',
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            profileImageUrl: session.user.user_metadata?.avatar_url,
+          });
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setCurrentUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            firstName: session.user.user_metadata?.firstName || '',
+            lastName: session.user.user_metadata?.lastName || '',
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            profileImageUrl: session.user.user_metadata?.avatar_url,
+          });
+        } else {
+          setCurrentUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
