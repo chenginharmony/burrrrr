@@ -789,6 +789,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile
+  app.put('/api/users/:userId', supabaseIsAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const currentUserId = req.user?.id;
+
+      // Only allow users to update their own profile
+      if (currentUserId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      const { firstName, lastName, username, profileImageUrl } = req.body;
+
+      const [updatedUser] = await db.update(users)
+        .set({
+          firstName,
+          lastName,
+          username,
+          profileImageUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ error: 'Failed to update user profile' });
+    }
+  });
+
   // Friends routes
   app.get('/api/friends', supabaseIsAuthenticated, async (req: any, res) => {
     try {
