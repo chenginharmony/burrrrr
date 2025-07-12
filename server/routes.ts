@@ -668,7 +668,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notifications routes
   app.get('/api/notifications', supabaseIsAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       const notifications = await storage.getUserNotifications(userId);
       res.json(notifications);
     } catch (error) {
@@ -690,7 +693,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Transactions routes
   app.get('/api/transactions', supabaseIsAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       const transactions = await storage.getUserTransactions(userId);
       res.json(transactions);
     } catch (error) {
@@ -827,8 +833,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Friends routes
   app.get('/api/friends', supabaseIsAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.id || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
       const friends = await db.query.users.findMany({
-        where: ne(users.id, req.user.id),
+        where: ne(users.id, userId),
         columns: {
           id: true,
           firstName: true,
@@ -1266,6 +1277,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'completed',
           referenceId: reference,
           metadata: response.data
+        });
+
+        // Create in-app notification
+        await storage.createNotification({
+          userId,
+          type: 'deposit_success',
+          title: 'Deposit Successful!',
+          message: `₦${amount.toLocaleString()} has been added to your wallet. Your funds are ready for betting!`,
+          metadata: { amount, reference, type: 'deposit' }
         });
 
         // Send WebSocket notification to user
